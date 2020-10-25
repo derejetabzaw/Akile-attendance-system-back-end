@@ -75,7 +75,7 @@ router.put(
     auth,
     async (req, res) => {
         try {
-            const userId = req.params.id;
+            let userId = req.params.id;
             const user = await User.findByIdAndUpdate(userId, req.body);
             await user.save();
             return res.status(200).json({ user });
@@ -94,14 +94,35 @@ router.delete(
     auth,
     async (req, res) => {
         try {
-            const userId = req.params.id;
+            let userId = req.params.id;
             const user = await User.findByIdAndDelete(userId);
             if (!user) {
                 return res.status(400).json({ error: "User not found" });
             }
-            return res.status(200).json({msg: "User deleted successfully"});
+            return res.status(200).json({ msg: "User deleted successfully" });
         } catch (error) {
             console.log("Server error occured");
+            res.status(500).json({ msg: "Server Error occured" });
+        }
+    }
+)
+
+// @route    Get api/users/:id
+// @desc     Get a single user
+// @access   Private
+router.get(
+    '/:id',
+    auth,
+    async (req, res) => {
+        try {
+            let userId = req.params.id;
+            const user = await User.findOne({ _id: userId });
+            if (!user) {
+                return res.status(400).json({ error: "User not found" });
+            }
+            return res.status(200).json({ user });
+        } catch (error) {
+            console.log(error.message);
             res.status(500).json({ msg: "Server Error occured" });
         }
     }
