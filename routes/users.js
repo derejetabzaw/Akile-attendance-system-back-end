@@ -58,13 +58,33 @@ router.get(
     async (req, res) => {
         try {
             const users = await User.find();
-            res.status(200).json({ users });
+            return res.status(200).json({ users });
         } catch (error) {
             console.log("Server error occured");
-            res.status(500).json({ msg: "Server Error occured" });
+            return res.status(500).json({ msg: "Server Error occured" });
         }
 
     }
 );
+
+// @route    UPDATE api/users/:id
+// @desc     Update a user
+// @access   Private
+router.put(
+    '/:id',
+    auth,
+    async (req, res) => {
+        try {
+            const userId = req.params.id;
+            const user = await User.findByIdAndUpdate(userId, req.body);
+            await user.save();
+            return res.status(200).json({ user });
+            
+        } catch (error) {
+            console.log("Server error occured");
+            res.status(500).json({ msg: "Server Error occured" });
+        }
+    }
+)
 
 module.exports = router;
