@@ -49,4 +49,22 @@ router.post(
     }
 );
 
+// @route    GET api/users
+// @desc     Return all Registered users
+// @access   Private
+router.get(
+    '/',
+    auth,
+    async (req, res) => {
+        try {
+            const users = await User.find();
+            res.status(200).json({ users });
+        } catch (error) {
+            console.log("Server error occured");
+            res.status(500).json({ msg: "Server Error occured" });
+        }
+
+    }
+);
+
 module.exports = router;
