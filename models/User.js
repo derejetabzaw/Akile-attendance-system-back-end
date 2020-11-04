@@ -34,6 +34,13 @@ const UserSchema = new mongoose.Schema({
     workingSite: {
         type: String,
     },
+    image: {
+        data: Buffer,
+        contentType: String
+    },
+    imageUrl: {
+        type: String
+    }
 });
 
 module.exports = mongoose.model('user', UserSchema);

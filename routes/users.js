@@ -5,20 +5,41 @@ const _ = require('lodash');
 const generator = require('generate-password');
 const auth = require('../middlewares/auth');
 const { Email } = require('../emailAlert');
+const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 
 const User = require('../models/User');
 const { check, validationResult } = require('express-validator');
+
+const MIME_TYPES ={
+    'image/jpeg': 'jpg',
+    'image/jpeg': 'jpg',
+    'image/png': 'png'
+}
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads');
+    },
+    filename: (req, file, cb) => {
+        const extension = MIME_TYPES[file.mimetype];
+        cb(null, file.fieldname + '-' + Date.now() + "." + extension );
+    }
+});
+
+const upload = multer({ storage: storage }).single('image');
 
 // @route    POST api/users/signup
 // @desc     Register user
 // @access   Public
 router.post(
     '/signup',
+    upload,
     [
         check('name', 'Name is required!').not().isEmpty(),
-        check('email', 'Email id is required!').not().isEmpty(),
+        check('email', 'Email id is required!').not().isEmpty().isEmail(),
         check('gender', 'Gender is required!').not().isEmpty(),
-        check('position', 'Position is required!').not().isEmail(),
         check('workingSite', "Working Site is required!").not().isEmpty()
     ],
     async (req, res) => {
@@ -35,11 +56,17 @@ router.post(
 
             // Generate random staff id for employees
             const staffId = "Ak-" + String(Math.floor(Math.random() * 10000))
-
+            const imageUrl = __dirname + '/../uploads/' + req.file.filename;
+            const image = {
+                data: fs.readFileSync(imageUrl),
+                contentType: 'image/png'
+            }
 
             user = new User({
                 name,
                 staffId,
+                image,
+                imageUrl,
                 isAdmin,
                 email,
                 gender,
@@ -66,7 +93,7 @@ router.post(
             };
 
             await Email.send(email, alertContent, "akile attendance system credintial info");
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'isAdmin','email', 'gender', 'position', 'workingSite']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'isAdmin', 'email', 'imageUrl', 'gender', 'position', 'workingSite']));
 
         } catch (error) {
             console.log(error.message);

@@ -1,8 +1,9 @@
-const dotenv = require('dotenv').config();
+require('dotenv').config();
 const app = require('express')();
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const multer = require('multer');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
