@@ -9,13 +9,31 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    password: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true
+    },
     deviceId: {
         type: String,
     },
     isAdmin: {
         type: Boolean,
         default: false,
-    }
+    },
+    gender: {
+        type: String,
+        required: true
+    },
+    position: {
+        type: String
+    },
+    workingSite: {
+        type: String,
+    },
 });
 
 module.exports = mongoose.model('user', UserSchema);
