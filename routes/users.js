@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
+const generator = require('generate-password');
 const auth = require('../middlewares/auth');
+const { Email } = require('../emailAlert');
 
 const User = require('../models/User');
 const { check, validationResult } = require('express-validator');
@@ -13,34 +15,58 @@ const { check, validationResult } = require('express-validator');
 router.post(
     '/signup',
     [
-        check('name', 'Name is required').not().isEmpty(),
-        check('staffId', 'Staff id is required').not().isEmpty(),
+        check('name', 'Name is required!').not().isEmpty(),
+        check('email', 'Email id is required!').not().isEmpty(),
+        check('gender', 'Gender is required!').not().isEmpty(),
+        check('position', 'Position is required!').not().isEmail(),
+        check('workingSite', "Working Site is required!").not().isEmpty()
     ],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, staffId, isAdmin } = req.body;
+        const { name, isAdmin, email, gender, position, workingSite } = req.body;
         try {
             let user = await User.findOne({ name });
-            console.log(user);
             if (user) {
                 return res.status(400).json({ error: [{ msg: "User already exists" }] });
             }
 
+            // Generate random staff id for employees
+            const staffId = "Ak-" + String(Math.floor(Math.random() * 10000))
+
+
             user = new User({
                 name,
                 staffId,
-                isAdmin
+                isAdmin,
+                email,
+                gender,
+                position,
+                workingSite
             });
+
+
+            // Generate a custom password for user
+            const generatedPassword = generator.generate({
+                length: 10,
+                number: true,
+                uppercase: true,
+                lowercase: true,
+                symbols: true
+            })
 
             const salt = await bcrypt.genSalt(10);
 
-            user.staffId = await bcrypt.hash(staffId, salt);
+            user.password = await bcrypt.hash(generatedPassword, salt);
             await user.save();
+            const alertContent = {
+                html: `<b>Hey there! </b><br> Your Credintials are Staff id: ${staffId} and password: ${generatedPassword}`,
+            };
 
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'isAdmin']));
+            await Email.send(email, alertContent, "akile attendance system credintial info");
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'isAdmin','email', 'gender', 'position', 'workingSite']));
 
         } catch (error) {
             console.log(error.message);

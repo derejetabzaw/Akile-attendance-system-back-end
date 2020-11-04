@@ -16,7 +16,7 @@ const auth = require('./routes/auth');
 //  Database connection
 (async () => {
     try {
-        await mongoose.connect(process.env.DB_URL, {
+        await mongoose.connect(process.env.LOCAL_DB_URL, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
             useCreateIndex: true,
