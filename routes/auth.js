@@ -10,8 +10,8 @@ const User = require('../models/User');
 router.post(
     '/login',
     [
-        check('name', "Name is required!").not().isEmpty(),
-        check('staffId', "staffId is required").not().isEmpty()
+        check('staffId', "staffId is required!").not().isEmpty(),
+        check('password', "Password is required!").not().isEmpty(),
     ],
     async (req, res) => {
         errors = validationResult(req);
@@ -19,17 +19,17 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() })
         }
-        const { name, staffId } = req.body;
-        const user = await User.findOne({ name });
+        const { staffId, password } = req.body;
+        const user = await User.findOne({ staffId });
 
         if (!user) {
-            return res.status(400).json({ error: 'Incorrect email or staffid' });
+            return res.status(400).json({ error: 'Incorrect staffId or password' });
         }
 
-        const validatePassword = await bcrypt.compare(staffId, user.staffId);
+        const validatePassword = await bcrypt.compare(password, user.password);
 
         if (!validatePassword) {
-            return res.status(403).json({ error: 'Incorrect email or staffid' });
+            return res.status(403).json({ error: 'Incorrect staffId or password' });
         }
 
         const payload = {
