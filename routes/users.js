@@ -4,12 +4,13 @@ const bcrypt = require('bcrypt');
 const _ = require('lodash');
 const generator = require('generate-password');
 const auth = require('../middlewares/auth');
-const { Email } = require('../emailAlert');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const moment = require('moment');
 
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 const { check, validationResult } = require('express-validator');
 
 const MIME_TYPES ={
@@ -37,25 +38,23 @@ router.post(
     '/signup',
     upload,
     [
-        check('name', 'Name is required!').not().isEmpty(),
-        check('email', 'Email id is required!').not().isEmpty().isEmail(),
-        check('gender', 'Gender is required!').not().isEmpty(),
-        check('workingSite', "Working Site is required!").not().isEmpty()
+        check('name', 'name is required!').not().isEmpty(),
+        check('staffId', 'staffIf is required!').not().isEmpty(),
+        check('gender', 'gender is required!').not().isEmpty(),
+        check('workingSite', "workingSite is required!").not().isEmpty()
     ],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, isAdmin, email, gender, position, workingSite } = req.body;
+        const { name, isAdmin, email, staffId, gender, password, position, workingSite } = req.body;
         try {
             let user = await User.findOne({ name });
             if (user) {
                 return res.status(400).json({ error: [{ msg: "User already exists" }] });
             }
 
-            // Generate random staff id for employees
-            const staffId = "Ak-" + String(Math.floor(Math.random() * 10000))
             const imageUrl = __dirname + '/../uploads/' + req.file.filename;
             const image = {
                 data: fs.readFileSync(imageUrl),
@@ -66,6 +65,7 @@ router.post(
                 name,
                 staffId,
                 image,
+                password,
                 imageUrl,
                 isAdmin,
                 email,
@@ -76,24 +76,24 @@ router.post(
 
 
             // Generate a custom password for user
-            const generatedPassword = generator.generate({
-                length: 10,
-                number: true,
-                uppercase: true,
-                lowercase: true,
-                symbols: true
-            })
+            // const generatedPassword = generator.generate({
+            //     length: 10,
+            //     number: true,
+            //     uppercase: true,
+            //     lowercase: true,
+            //     symbols: true
+            // });
 
             const salt = await bcrypt.genSalt(10);
 
-            user.password = await bcrypt.hash(generatedPassword, salt);
+            user.password = await bcrypt.hash(password, salt);
             await user.save();
-            const alertContent = {
-                html: `<b>Hey there! </b><br> Your Credintials are Staff id: ${staffId} and password: ${generatedPassword}`,
-            };
+            // const alertContent = {
+            //     html: `<b>Hey there! </b><br> Your Credintials are Staff id: ${staffId} and password: ${generatedPassword}`,
+            // };
 
-            await Email.send(email, alertContent, "akile attendance system credintial info");
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'isAdmin', 'email', 'imageUrl', 'gender', 'position', 'workingSite']));
+            // return res.status(200).json({password: generatedPassword});
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId', 'password', 'isAdmin', 'email', 'imageUrl', 'gender', 'position', 'workingSite']));
 
         } catch (error) {
             console.log(error.message);
@@ -116,7 +116,6 @@ router.get(
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });
         }
-
     }
 );
 
@@ -179,6 +178,54 @@ router.get(
             res.status(500).json({ msg: "Server Error occured" });
         }
     }
-)
+);
+
+// @route Post api/users/checkin
+// @desc Add user checkin time
+// @access Private
+router.post(
+    '/checkin',
+    auth,
+    async (req, res) =>{
+        try {
+            // add user checkin time
+            const attendance = new Attendance({
+                date: moment().format("YYYY-MM-DD"),
+                user: req.user.id,
+                checkInTime: moment().format("HH:mm:ss"),
+            });
+            await attendance.save();
+            res.status(200).json(attendance);
+
+        } catch (error) {
+            console.log(error.message);
+            res.status(500).json({ msg: "Server Error occured"});
+        }
+    }
+);
+
+// @route Post api/users/checkout
+// @desc Add user checkout time
+// @access Private
+router.post(
+    '/checkout',
+    auth,
+    async (req, res) =>{
+        try {
+            const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
+            if(!attendance) {
+                res.status(400).json({ msg: "YOU have to checkin before checking out!"});
+            }
+            // add user checkout time
+            attendance.checkOutTime = moment().format("HH:mm:ss");
+            await attendance.save();
+            res.status(200).json(attendance);
+
+        } catch (error) {
+            console.log(error.message);
+            res.status(500).json({ msg: "Server Error occured"});
+        }
+    }
+);
 
 module.exports = router;
