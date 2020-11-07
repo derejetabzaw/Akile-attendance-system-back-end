@@ -44,7 +44,7 @@ router.post(
             { expiresIn: '1 days' },
             (err, token) => {
                 if (err) throw err;
-                return res.status(200).json({ token })
+                return res.status(200).json({ accessToken: token })
             }
         );
     });
