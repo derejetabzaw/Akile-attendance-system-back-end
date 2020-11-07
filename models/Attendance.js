@@ -2,20 +2,17 @@ const mongoose  = require('mongoose');
 
 const AttendanceSchema = mongoose.Schema({
     user: {
-        type: mongoose.Types.Array,
+        type: mongoose.Schema.Types.ObjectId,
         ref: 'user'
     },
     date: {
-        type: Date,
-        default: Date.now()
+        type: String,
     },
     checkInTime: {
-        type: Date,
-        default: Date.now()
+        type: String,
     },
     checkOutTime: {
-        type: Date,
-        default: Date.now()
+        type: String,
     }
 });
 
