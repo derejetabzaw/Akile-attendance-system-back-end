@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const moment = require('moment');
+const { calculateTotalHours } = require('../utils')
 
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
@@ -48,18 +49,23 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, isAdmin, email, staffId, gender, password, position, workingSite } = req.body;
+        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite } = req.body;
         try {
             let user = await User.findOne({ name });
             if (user) {
                 return res.status(400).json({ error: [{ msg: "User already exists" }] });
             }
 
-            const imageUrl = __dirname + '/../uploads/' + req.file.filename;
+            let imageUrl = "";
+            if(image) {
+                req.file.filename ? imageUrl=__dirname + '/../uploads/' + req.file.filename: imageUrl="";
+            
             const image = {
                 data: fs.readFileSync(imageUrl),
                 contentType: 'image/png'
+                }
             }
+            
 
             user = new User({
                 name,
@@ -93,7 +99,7 @@ router.post(
             // };
 
             // return res.status(200).json({password: generatedPassword});
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId', 'password', 'isAdmin', 'email', 'imageUrl', 'gender', 'position', 'workingSite']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite']));
 
         } catch (error) {
             console.log(error.message);
@@ -188,15 +194,30 @@ router.post(
     auth,
     async (req, res) =>{
         try {
-            // add user checkin time
-            const attendance = new Attendance({
-                date: moment().format("YYYY-MM-DD"),
-                user: req.user.id,
-                checkInTime: moment().format("HH:mm:ss"),
-            });
-            await attendance.save();
-            res.status(200).json(attendance);
-
+            //  check if user deviceId matches
+            const { deviceId } = req.body;
+            const user = await User.findOne({_id: req.user.id});
+            console.log(req.user.id)
+            console.log(user.deviceId)
+            // if(user.deviceId != nu)
+            if (user.deviceId == deviceId) {
+                // check if user already checkes in before
+                const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
+                if(attendance) {
+                    res.status(400).json({"error": "You already cheked in for today"});
+                } else {
+                    const attendance = new Attendance({
+                        date: moment().format("YYYY-MM-DD"),
+                        user: req.user.id,
+                        checkInTime: moment().format("HH:mm:ss"),
+                    });
+                    await attendance.save();
+                    res.status(200).json(attendance);
+                }
+                
+            } else {
+                res.status(400).json({"error": "You can checkin only with you own registered device"});
+            }
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured"});
@@ -212,15 +233,23 @@ router.post(
     auth,
     async (req, res) =>{
         try {
-            const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
-            if(!attendance) {
-                res.status(400).json({ msg: "YOU have to checkin before checking out!"});
+            const { deviceId } = req.body;
+            const user = await User.findOne({_id: req.user.id});
+            if (deviceId == user.deviceId) {
+                const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
+                if(!attendance) {
+                    res.status(400).json({ msg: "YOU have to checkin before checking out!"});
+                }
+                // add user checkout time
+                attendance.checkOutTime = moment().format("HH:mm:ss");
+                await attendance.save();
+                const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
+                user.workedHours = totalHours
+                await user.save();
+                res.status(200).json(attendance);
+            } else {
+                res.status(400).json({"error": "You can checkout only with you own registered device"});
             }
-            // add user checkout time
-            attendance.checkOutTime = moment().format("HH:mm:ss");
-            await attendance.save();
-            res.status(200).json(attendance);
-
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured"});
