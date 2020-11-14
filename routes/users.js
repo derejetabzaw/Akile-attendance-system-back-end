@@ -49,7 +49,7 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite } = req.body;
+        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId } = req.body;
         try {
             let user = await User.findOne({ name });
             if (user) {
@@ -69,6 +69,7 @@ router.post(
 
             user = new User({
                 name,
+                deviceId,
                 staffId,
                 image,
                 password,
