@@ -198,18 +198,18 @@ router.post(
             const { deviceId } = req.body;
             const user = await User.findOne({_id: req.user.id});
             console.log(req.user.id)
-            console.log(user.deviceId)
-            // if(user.deviceId != nu)
+            console.log(deviceId)
             if (user.deviceId == deviceId) {
                 // check if user already checkes in before
-                const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
-                if(attendance) {
+                const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
+                if(checkInTime) {
                     res.status(400).json({"error": "You already cheked in for today"});
                 } else {
                     const attendance = new Attendance({
                         date: moment().format("YYYY-MM-DD"),
                         user: req.user.id,
                         checkInTime: moment().format("HH:mm:ss"),
+                        checkOutTime: ""
                     });
                     await attendance.save();
                     res.status(200).json(attendance);
@@ -237,16 +237,19 @@ router.post(
             const user = await User.findOne({_id: req.user.id});
             if (deviceId == user.deviceId) {
                 const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
+                console.log(attendance)
                 if(!attendance) {
-                    res.status(400).json({ msg: "YOU have to checkin before checking out!"});
+                    // add user checkout time
+                    attendance.checkOutTime = moment().format("HH:mm:ss");
+                    await attendance.save();
+                    const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
+                    user.workedHours = totalHours
+                    await user.save();
+                    res.status(200).json(attendance);
+                }else {
+                    return res.status(400).json({ msg: "YOU have to checkin before checking out!"});
                 }
-                // add user checkout time
-                attendance.checkOutTime = moment().format("HH:mm:ss");
-                await attendance.save();
-                const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
-                user.workedHours = totalHours
-                await user.save();
-                res.status(200).json(attendance);
+                
             } else {
                 res.status(400).json({"error": "You can checkout only with you own registered device"});
             }
