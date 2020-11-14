@@ -246,7 +246,10 @@ router.post(
                     user.workedHours = totalHours
                     await user.save();
                     res.status(200).json(attendance);
-                }else {
+                }else if (attendance && !(attendance.checkOutTime == "")){
+                    return res.status(400).json({ msg: "You checked out already for today!"});
+                }
+                else {
                     return res.status(400).json({ msg: "YOU have to checkin before checking out!"});
                 }
                 
