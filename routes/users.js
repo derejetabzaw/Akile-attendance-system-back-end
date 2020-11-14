@@ -238,7 +238,7 @@ router.post(
             if (deviceId == user.deviceId) {
                 const attendance= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id });
                 console.log(attendance)
-                if(attendance) {
+                if(attendance && attendance.checkOutTime == "") {
                     // add user checkout time
                     attendance.checkOutTime = moment().format("HH:mm:ss");
                     await attendance.save();
