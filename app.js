@@ -15,6 +15,8 @@ const user = require('./routes/users');
 const auth = require('./routes/auth');
 
 //  Database connection
+
+
 (async () => {
     try {
         await mongoose.connect(process.env.DB_URL, {
@@ -35,6 +37,5 @@ const auth = require('./routes/auth');
 // Define database routes
 app.use('/api/v1/users', user);
 app.use('/api/v1/auth', auth);
-
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

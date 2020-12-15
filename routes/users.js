@@ -56,6 +56,13 @@ router.post(
                 return res.status(400).json({ error: [{ msg: "User already exists" }] });
             }
 
+            let user_another = await User.findOne({ staffId });
+            if (user_another) {
+                return res.status(400).json({ error: [{ msg: "StaffID already exists" }] });
+            }
+
+
+
             let imageUrl = "";
             if(image) {
                 req.file.filename ? imageUrl=__dirname + '/../uploads/' + req.file.filename: imageUrl="";
@@ -114,9 +121,10 @@ router.post(
 // @access   Private
 router.get(
     '/',
-    auth,
+    // auth,
     async (req, res) => {
         try {
+            
             const users = await User.find();
             return res.status(200).json({ users });
         } catch (error) {
@@ -131,11 +139,11 @@ router.get(
 // @access   Private
 router.put(
     '/:id',
-    auth,
+    // auth,
     async (req, res) => {
         try {
             let userId = req.params.id;
-            const user = await User.findByIdAndUpdate(userId, req.body);
+            const user = await User.findOneAndUpdate(userId, req.body);
             await user.save();
             return res.status(200).json({ user });
         } catch (error) {
@@ -150,11 +158,11 @@ router.put(
 // @access   Private
 router.delete(
     '/:id',
-    auth,
+    // auth,
     async (req, res) => {
         try {
             let userId = req.params.id;
-            const user = await User.findByIdAndDelete(userId);
+            const user = await User.findByIdAndRemove(userId);
             if (!user) {
                 return res.status(400).json({ error: "User not found" });
             }
@@ -171,7 +179,7 @@ router.delete(
 // @access   Private
 router.get(
     '/:id',
-    auth,
+    // auth,
     async (req, res) => {
         try {
             let userId = req.params.id;
@@ -196,15 +204,19 @@ router.post(
     async (req, res) =>{
         try {
             //  check if user deviceId matches
-            const { deviceId } = req.body;
+            console.log(req.body)
+            const { deviceId, Location } = req.body;
+            // const { Location } = parseInt(req.body.position);
             const user = await User.findOne({_id: req.user.id});
-            console.log(req.user.id)
+
             console.log(deviceId)
+            console.log(Location)
+ 
             if (user.deviceId == deviceId) {
                 // check if user already checkes in before
                 const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
                 if(checkInTime) {
-                    res.status(400).json({"error": "You already cheked in for today"});
+                    res.status(400).json({"error": "You already checked in for today"});
                 } else {
                     const attendance = new Attendance({
                         date: moment().format("YYYY-MM-DD"),
@@ -217,7 +229,7 @@ router.post(
                 }
                 
             } else {
-                res.status(400).json({"error": "You can checkin only with you own registered device"});
+                res.status(400).json({"error": "You can only check-in with your registered device"});
             }
         } catch (error) {
             console.log(error.message);
@@ -248,14 +260,14 @@ router.post(
                     await user.save();
                     res.status(200).json(attendance);
                 }else if (attendance && !(attendance.checkOutTime == "")){
-                    return res.status(400).json({ msg: "You checked out already for today!"});
+                    return res.status(400).json({ msg: "You've checked-out already for today!"});
                 }
                 else {
-                    return res.status(400).json({ msg: "YOU have to checkin before checking out!"});
+                    return res.status(400).json({ msg: "You've to check-in before checking-out!"});
                 }
                 
             } else {
-                res.status(400).json({"error": "You can checkout only with you own registered device"});
+                res.status(400).json({"error": "You can only check-out with your registered device"});
             }
         } catch (error) {
             console.log(error.message);

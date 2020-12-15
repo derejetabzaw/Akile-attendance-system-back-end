@@ -11,7 +11,7 @@ router.post(
     '/login',
     [
         check('staffId', "staffId is required!").not().isEmpty(),
-        check('password', "Password is required!").not().isEmpty(),
+        check('password', "Password is not given!").not().isEmpty(),
     ],
     async (req, res) => {
         errors = validationResult(req);
@@ -23,19 +23,24 @@ router.post(
         const user = await User.findOne({ staffId });
 
         if (!user) {
-            return res.status(400).json({ error: 'Incorrect staffId or password' });
+            return res.status(400).json({ error: 'Incorrect Staff-Id or Password' });
         }
 
         const validatePassword = await bcrypt.compare(password, user.password);
 
         if (!validatePassword) {
-            return res.status(403).json({ error: 'Incorrect staffId or password' });
+            return res.status(403).json({ error: 'Incorrect Staff-Id or Password' });
         }
 
         const payload = {
             user: {
                 id: user.id
             }
+        }
+        try {
+            console.log("Try");
+        } catch(e) { // Missing this
+            console.error(e); 
         }
 
         jwt.sign(
