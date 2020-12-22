@@ -1,4 +1,4 @@
-const { calculateTotalHours } = require('./helpers')
+const { calculateTotalHours } = require('./helpers');
 
 module.exports = {
     calculateTotalHours
