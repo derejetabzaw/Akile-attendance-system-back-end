@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 8081;
 
 const user = require('./routes/users');
 const auth = require('./routes/auth');
+const attendance = require('./routes/attendance');
 
 //  Database connection
 
@@ -36,6 +37,7 @@ const auth = require('./routes/auth');
 
 // Define database routes
 app.use('/api/v1/users', user);
+app.use('/api/v1/attendance', attendance);
 app.use('/api/v1/auth', auth);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

@@ -203,6 +203,7 @@ router.post(
     auth,
     async (req, res) =>{
         try {
+            console.log("res::",req.headers.authorization)
             //  check if user deviceId matches
             // console.log(req.body)
             const { deviceId, Location } = req.body;
@@ -210,6 +211,7 @@ router.post(
             const user = await User.findOne({_id: req.user.id});
 
             console.log(deviceId)
+            console.log(req.body)
             console.log(req.user.id)
             console.log(user)
             // console.log(Location)
@@ -238,6 +240,8 @@ router.post(
             await attendance.save();
             // console.log("attendance", attendance)
             // console.log("first_check_in_time", attendance.checkInTime)
+            console.log("posted-attendance-information",attendance);
+
             res.status(200).json(attendance);
                 
             // } else {
