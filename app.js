@@ -21,6 +21,7 @@ const attendance = require('./routes/attendance');
 (async () => {
     try {
         await mongoose.connect(process.env.DB_URL, {
+            //useMongoClient: true,
             useNewUrlParser: true,
             useUnifiedTopology: true,
             useCreateIndex: true,
