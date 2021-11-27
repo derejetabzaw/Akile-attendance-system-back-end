@@ -209,44 +209,54 @@ router.post(
             const { deviceId, Location } = req.body;
             // const { Location } = parseInt(req.body.position);
             const user = await User.findOne({_id: req.user.id});
+            
+            // console.log(deviceId)
+            // console.log(req.body)
+            // console.log(req.user.id)
+            // console.log(user)
 
-            console.log(deviceId)
-            console.log(req.body)
-            console.log(req.user.id)
-            console.log(user)
-            // console.log(Location)
+            // console.log(Location)  // On line 215 it prints the position so this line not needed
+            // line 213 - 216 copied to 223 - 226 before commented
  
-            // if (user.deviceId == deviceId) {
-                // check if user already checkes in before
-                // const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
-                // if(checkInTime) {
-                //     res.status(400).json({"error": "You already checked in for today"});
-                // } else {
-                //     const attendance = new Attendance({
-                //         date: moment().format("YYYY-MM-DD"),
-                //         user: req.user.id,
-                //         checkInTime: moment().format("HH:mm:ss"),
-                //         checkOutTime: ""
-                //     });
-                //     await attendance.save();
-                //     res.status(200).json(attendance);
-                // }
-            const attendance = new Attendance({
-                        date: moment().format("dddd, DD-MM-YYYY"),
+            if (user.deviceId == deviceId) {
+
+                console.log(deviceId);
+                console.log(req.body);
+                console.log(req.user.id);
+                console.log(user);    
+
+                //check if user already checkes in before
+                const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
+                if(checkInTime) {
+                    console.log(checkInTime);
+                    res.status(400).json({"error": "You already checked in for today"});
+                } else {
+                    const attendance = new Attendance({
+                        date: moment().format("YYYY-MM-DD"),
                         user: req.user.id,
                         checkInTime: moment().format("HH:mm:ss"),
                         checkOutTime: ""
                     });
-            await attendance.save();
-            // console.log("attendance", attendance)
-            // console.log("first_check_in_time", attendance.checkInTime)
-            console.log("posted-attendance-information",attendance);
-
-            res.status(200).json(attendance);
+                    await attendance.save();
+                    console.log("posted-attendance-information",attendance);
+                    res.status(200).json(attendance);
+                } 
+                              // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
+                                        //const attendance = new Attendance({
+                                        //date: moment().format("dddd, DD-MM-YYYY"),
+                                        //user: req.user.id,
+                                        //checkInTime: moment().format("HH:mm:ss"),
+                                        //checkOutTime: ""
+                                        //});
+                                        //await attendance.save();
+                                        // console.log("attendance", attendance)
+                                        // console.log("first_check_in_time", attendance.checkInTime)
+                                        //console.log("posted-attendance-information",attendance);
+                                        //res.status(200).json(attendance);
                 
-            // } else {
-            //     res.status(400).json({"error": "You can only check-in with your registered device"});
-            // }
+            } else {
+               res.status(400).json({"error": "You can only check-in with your registered device"});
+            }
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured"});
@@ -265,58 +275,60 @@ router.post(
             const { deviceId } = req.body;
             console.log("BODY:" , req.user)
             const user = await User.findOne({_id: req.user.id});
-            // if (deviceId == user.deviceId) {
+            if (deviceId == user.deviceId) {
 
-            const attendance = await Attendance.findOne({
-                // date: moment().format("dddd-YYYY-MM-DD"), 
-                date: moment().format("dddd, DD-MM-YYYY"),
-                user: req.user.id},{},{ sort: { 'checkInTime' : -1 } });
-            
-            
-            // if(attendance && attendance.checkOutTime == "") {
-            //     // add user checkout time
-            //     attendance.checkOutTime = moment().format("HH:mm:ss");
-            //     await attendance.save();
-            //     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
-            //     user.workedHours = totalHours
-            //     await user.save();
-            //     res.status(200).json(attendance);
-            // }else if (attendance && !(attendance.checkOutTime == "")){
-            //     return res.status(400).json({ msg: "You've checked-out already for today!"});
-            // }
-            // else {
-            //     return res.status(400).json({ msg: "You've to check-in before checking-out!"});
-            // }
-            attendance.checkOutTime = moment().format("HH:mm:ss");
-            const day = moment().format("dddd");
-            const date = moment().format("DD,MM,YYYY");
-            // attendance.checkInDay = moment().format("YYYY-MM-DD");
-            
-            // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
-            //     console.log( "Here" );
-            //   });
-            
-            // console.log("attendance.checkInDay: ",attendance.checkInDay)
-            // const get_day = moment().format("dddd");
+                const attendance = await Attendance.findOne({
+                    // date: moment().format("dddd-YYYY-MM-DD"), 
+                    //date: moment().format("dddd, DD-MM-YYYY"),
+                    date: moment().format("YYYY-MM-DD"),
+                    user: req.user.id},{},{ sort: { 'checkInTime' : -1 } });
+                
+                
+                // if(attendance && attendance.checkOutTime == "") {
+                //     // add user checkout time
+                //     attendance.checkOutTime = moment().format("HH:mm:ss");
+                //     await attendance.save();
+                //     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
+                //     user.workedHours = totalHours
+                //     await user.save();
+                //     res.status(200).json(attendance);
+                // }else if (attendance && !(attendance.checkOutTime == "")){
+                //     return res.status(400).json({ msg: "You've checked-out already for today!"});
+                // }
+                // else {
+                //     return res.status(400).json({ msg: "You've to check-in before checking-out!"});
+                // }
+                attendance.checkOutTime = moment().format("HH:mm:ss");
+                const day = moment().format("dddd");
+                const date = moment().format("DD,MM,YYYY");
+                // attendance.checkInDay = moment().format("YYYY-MM-DD");
+                
+                // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
+                //     console.log( "Here" );
+                //   });
+                
+                // console.log("attendance.checkInDay: ",attendance.checkInDay)
+                // const get_day = moment().format("dddd");
 
-            console.log("attendance.checkInTime: ",attendance.checkInTime)
-            console.log("attendance.checkOutTime: ",attendance.checkOutTime)
-            console.log("attendance.checkin_Date:" , attendance.date)
-            await attendance.save();
+                console.log("attendance.checkInTime: ",attendance.checkInTime)
+                console.log("attendance.checkOutTime: ",attendance.checkOutTime)
+                console.log("attendance.checkin_Date:" , attendance.date)
+                await attendance.save();
 
-            const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
-            console.log("totalHours: ",totalHours)
-            user.workedHours = totalHours[0]
+                const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
+                console.log("totalHours: ",totalHours)
+                user.workedHours = totalHours[0]
 
-            // console.log("attendance: ", attendance)
-            console.log("user: ",user)
-            await user.save();
-            res.status(200).json(attendance);
+                // console.log("attendance: ", attendance)
+                //console.log("user: ",user)
+                console.log("workedHours: ",user.workedHours)
+                await user.save();
+                res.status(200).json(attendance);
 
-            
-        // } else {
-            res.status(400).json({"error": "You can only check-out with your registered device"});
-            
+                
+            } else {
+                res.status(400).json({"error": "You can only check-out with your registered device"});
+            }  
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured"});
