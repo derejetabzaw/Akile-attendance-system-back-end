@@ -121,7 +121,7 @@ router.post(
 // @access   Private
 router.get(
     '/',
-    auth,
+    // auth,
     async (req, res) => {
         try {
             
@@ -238,6 +238,7 @@ router.post(
                         checkOutTime: ""
                     });
             await attendance.save();
+
             // console.log("attendance", attendance)
             // console.log("first_check_in_time", attendance.checkInTime)
             console.log("posted-attendance-information",attendance);
