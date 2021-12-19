@@ -121,7 +121,7 @@ router.post(
 // @access   Private
 router.get(
     '/',
-    auth,
+    // auth,
     async (req, res) => {
         try {
             
@@ -237,10 +237,11 @@ router.post(
                         checkInTime: moment().format("HH:mm:ss"),
                         checkOutTime: ""
                     });
-                    await attendance.save();
-                    console.log("posted-attendance-information",attendance);
-                    res.status(200).json(attendance);
-                } 
+
+          //          await attendance.save();
+        //            console.log("posted-attendance-information",attendance);
+              //      res.status(200).json(attendance);
+            //    } 
                               // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
                                         //const attendance = new Attendance({
                                         //date: moment().format("dddd, DD-MM-YYYY"),
@@ -253,6 +254,15 @@ router.post(
                                         // console.log("first_check_in_time", attendance.checkInTime)
                                         //console.log("posted-attendance-information",attendance);
                                         //res.status(200).json(attendance);
+
+            await attendance.save();
+
+            // console.log("attendance", attendance)
+            // console.log("first_check_in_time", attendance.checkInTime)
+            console.log("posted-attendance-information",attendance);
+
+            res.status(200).json(attendance);
+
                 
             } else {
                res.status(400).json({"error": "You can only check-in with your registered device"});
