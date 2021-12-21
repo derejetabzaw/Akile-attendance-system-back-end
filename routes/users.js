@@ -218,55 +218,55 @@ router.post(
             // console.log(Location)  // On line 215 it prints the position so this line not needed
             // line 213 - 216 copied to 223 - 226 before commented
  
-            if (user.deviceId == deviceId) {
+            // if (user.deviceId == deviceId) {
 
-                console.log(deviceId);
-                console.log(req.body);
-                console.log(req.user.id);
-                console.log(user);    
+            console.log(deviceId);
+            console.log(req.body);
+            console.log(req.user.id);
+            console.log(user);    
 
-                //check if user already checkes in before
-                const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
-                if(checkInTime) {
-                    console.log(checkInTime);
-                    res.status(400).json({"error": "You already checked in for today"});
-                } else {
-                    const attendance = new Attendance({
-                        date: moment().format("YYYY-MM-DD"),
-                        user: req.user.id,
-                        checkInTime: moment().format("HH:mm:ss"),
-                        checkOutTime: ""
-                    });
-
-          //          await attendance.save();
-        //            console.log("posted-attendance-information",attendance);
-              //      res.status(200).json(attendance);
-            //    } 
-                              // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
-                                        //const attendance = new Attendance({
-                                        //date: moment().format("dddd, DD-MM-YYYY"),
-                                        //user: req.user.id,
-                                        //checkInTime: moment().format("HH:mm:ss"),
-                                        //checkOutTime: ""
-                                        //});
-                                        //await attendance.save();
-                                        // console.log("attendance", attendance)
-                                        // console.log("first_check_in_time", attendance.checkInTime)
-                                        //console.log("posted-attendance-information",attendance);
-                                        //res.status(200).json(attendance);
-
-            await attendance.save();
-
-            // console.log("attendance", attendance)
-            // console.log("first_check_in_time", attendance.checkInTime)
-            console.log("posted-attendance-information",attendance);
-
-            res.status(200).json(attendance);
-
-                
+            //check if user already checkes in before
+            const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
+            if(checkInTime) {
+                console.log(checkInTime);
+                res.status(400).json({"error": "You already checked in for today"});
             } else {
-               res.status(400).json({"error": "You can only check-in with your registered device"});
-            }
+                const attendance = new Attendance({
+                    date: moment().format("YYYY-MM-DD"),
+                    user: req.user.id,
+                    checkInTime: moment().format("HH:mm:ss"),
+                    checkOutTime: ""
+                });
+
+        //          await attendance.save();
+    //            console.log("posted-attendance-information",attendance);
+            //      res.status(200).json(attendance);
+        //    } 
+                            // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
+                                    //const attendance = new Attendance({
+                                    //date: moment().format("dddd, DD-MM-YYYY"),
+                                    //user: req.user.id,
+                                    //checkInTime: moment().format("HH:mm:ss"),
+                                    //checkOutTime: ""
+                                    //});
+                                    //await attendance.save();
+                                    // console.log("attendance", attendance)
+                                    // console.log("first_check_in_time", attendance.checkInTime)
+                                    //console.log("posted-attendance-information",attendance);
+                                    //res.status(200).json(attendance);
+
+        await attendance.save();
+
+        // console.log("attendance", attendance)
+        // console.log("first_check_in_time", attendance.checkInTime)
+        console.log("posted-attendance-information",attendance);
+
+        res.status(200).json(attendance);
+
+            
+        // } else {
+        //    res.status(400).json({"error": "You can only check-in with your registered device"});
+        }
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured"});
