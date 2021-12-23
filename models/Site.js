@@ -21,8 +21,9 @@ const SiteSchema = new mongoose.Schema({
         type: String,
     },
     paintarea: {
-        type: Boolean,
-        default: false,
+        type: Number,
+        required: true
+        
     }
 });
 
