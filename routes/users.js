@@ -49,7 +49,7 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId , salary } = req.body;
+        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId , salary , telephone } = req.body;
         try {
             let user = await User.findOne({ name });
             if (user) {
@@ -87,6 +87,7 @@ router.post(
                 position,
                 workingSite,
                 salary,
+                telephone,
             });
 
 
@@ -108,7 +109,7 @@ router.post(
             // };
 
             // return res.status(200).json({password: generatedPassword});
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId','deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite','salary']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId','deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite','salary','telephone']));
 
         } catch (error) {
             console.log(error.message);

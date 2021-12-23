@@ -47,6 +47,9 @@ const UserSchema = new mongoose.Schema({
     salary: {
         type: String,
         required: true
+    },
+    telephone: {
+        type:String,
     }
 });
 
