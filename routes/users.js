@@ -12,6 +12,7 @@ const { calculateTotalHours } = require('../utils')
 
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const Site = require('../models/Site');
 const { check, validationResult } = require('express-validator');
 
 const MIME_TYPES ={
@@ -136,24 +137,6 @@ router.get(
     }
 );
 
-// @route    UPDATE api/users/:id
-// @desc     Update a user
-// @access   Private
-router.put(
-    '/:id',
-    auth,
-    async (req, res) => {
-        try {
-            let userId = req.params.id;
-            const user = await User.findOneAndUpdate(userId, req.body);
-            await user.save();
-            return res.status(200).json({ user });
-        } catch (error) {
-            console.log("Server error occured");
-            res.status(500).json({ msg: "Server Error occured" });
-        }
-    }
-);
 
 // @route    DELETE api/users/:id
 // @desc     Delete a user
