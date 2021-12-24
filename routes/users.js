@@ -129,7 +129,7 @@ router.get(
         try {
             
             const users = await User.find();
-            return res.status(200).json({ users });
+            return res.status(200).json( {users});
         } catch (error) {
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });

@@ -17,7 +17,7 @@ router.get(
         try {
             
             const sites = await Site.find();
-            return res.status(200).json({ sites });
+            return res.status(200).json({sites});// Not modified 
         } catch (error) {
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });
