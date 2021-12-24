@@ -43,6 +43,13 @@ const UserSchema = new mongoose.Schema({
     },
     workedHours: {
         type: String
+    },
+    salary: {
+        type: String,
+        required: true
+    },
+    telephone: {
+        type:String,
     }
 });
 
