@@ -53,5 +53,22 @@ router.post(
     }
 
     }
+  
 )
+// router.put('/update-sites/:id',async(req,res)=>
+// {
+//     Site.findByIdAndUpdate(req.params.id,req.body,(err,response)=>{
+//         if(err){res.json({message:"Error occured"+req.params.id})
+//         res.json(response);
+
+//         }
+//     });
+// });
+router.delete('/delete-sites/:id',(req,res)=>{
+    console.log(req.params)
+       Site.deleteOne({ _id:req.params.id},(err)=>{
+        console.log("record deleted")
+        if(err){res.json({message:"Error Occured cannot complete that operation"})}
+    })
+})
 module.exports = router;
