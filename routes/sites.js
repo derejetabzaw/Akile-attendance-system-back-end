@@ -55,15 +55,21 @@ router.post(
     }
   
 )
-// router.put('/update-sites/:id',async(req,res)=>
-// {
-//     Site.findByIdAndUpdate(req.params.id,req.body,(err,response)=>{
-//         if(err){res.json({message:"Error occured"+req.params.id})
-//         res.json(response);
+router.put('/update-sites/:id',async(req,res)=>
+{
+    console.log(req.body)
+    Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
+        if(err){
+            console.log(err);
+            console.log(req.params.id)
+            response.json({message:"operation failed"})
+        }
 
-//         }
-//     });
-// });
+    })
+
+        
+    });
+
 router.delete('/delete-sites/:id',(req,res)=>{
     console.log(req.params)
        Site.deleteOne({ _id:req.params.id},(err)=>{
