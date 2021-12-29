@@ -142,15 +142,16 @@ router.get(
 // @desc     Delete a user
 // @access   Private
 router.delete(
-    '/:id',
-    auth,
+    '/delete-user/:id',
+    // auth, 
     async (req, res) => {
         try {
+            
             let userId = req.params.id;
-            const user = await User.findByIdAndRemove(userId);
-            if (!user) {
-                return res.status(400).json({ error: "User not found" });
-            }
+            User.deleteOne({staffId:userId},(err)=>{
+                if(err){console.log("Error While deleting")}
+            })
+          
             return res.status(200).json({ msg: "User deleted successfully" });
         } catch (error) {
             console.log("Server error occured");
