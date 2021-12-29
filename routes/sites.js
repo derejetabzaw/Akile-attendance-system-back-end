@@ -44,6 +44,7 @@ router.post(
             sitemanager,
             paintarea
         })
+        console.log(site);
         await site.save();
          return res.status(200).json(_.pick(site, ['_id', 'sitename', 'location','latitude','longitude', 'sitemanager', 'paintarea']));
 
@@ -69,6 +70,8 @@ router.put('/update-sites/:id',async(req,res)=>
 
         
     });
+
+
 
 router.delete('/delete-sites/:id',(req,res)=>{
     console.log(req.params)
