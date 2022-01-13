@@ -150,42 +150,65 @@ router.put(
                 response.json({message:"operation failed"})
             }
         })  
-});
+    });
+// @route    UPDATE api/users/update-user/:id
+// @desc     Update a user
+// @access   Private
+router.put(
+    '/update-user/:id',
+    async(req,res)=>{
+        console.log(req.body)
+        Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
+            if(err){
+                console.log(err);
+                console.log(req.params.id)
+                response.json({message:"Update Failed"})
+            }
+        })        
+    }
+)
 
-// @route    DELETE api/users/:id
+// @route    DELETE api/users/delete-user/:id
 // @desc     Delete a user
 // @access   Private
 router.delete(
     '/delete-user/:id',
-    auth,
+
+    // auth, 
     async (req, res) => {
-        console.log(req.params)
-       User.deleteOne({ _id:req.params.id},(err)=>{
-           console.log("User deleted")
-            if(err){
-                res.json({message:"Error Occured cannot complete that operation"})
-            }
-        })
+        try {
+            
+            let userId = req.params.id;
+            User.deleteOne({staffId:userId},(err)=>{
+                if(err){console.log("Error While Deleting")}
+            })
+          
+            return res.status(200).json({ msg: "User Deleted Successfully" });
+        } catch (error) {
+            console.log("Server error occured");
+            res.status(500).json({ msg: "Server Error occured" });
+        }
     }
 )
 
+<<<<<<< HEAD
 // router.delete(
 //     '/:id',
+=======
+>>>>>>> 5c27d3c562a258f71165d29d3dc495cfed6d3970
 //     auth,
 //     async (req, res) => {
-//         try {
-//             let userId = req.params.id;
-//             const user = await User.findByIdAndRemove(userId);
-//             if (!user) {
-//                 return res.status(400).json({ error: "User not found" });
+//         console.log(req.params)
+//        User.deleteOne({ _id:req.params.id},(err)=>{
+//            console.log("User deleted")
+//             if(err){
+//                 res.json({message:"Error Occured cannot complete that operation"})
 //             }
-//             return res.status(200).json({ msg: "User deleted successfully" });
-//         } catch (error) {
-//             console.log("Server error occured");
-//             res.status(500).json({ msg: "Server Error occured" });
-//         }
+//         })
+// >>>>>>> cfcaa1675677dd4278323a4560fdbe996c113747
 //     }
-// )
+//)
+
 
 // @route    Get api/users/:id
 // @desc     Get a single user
