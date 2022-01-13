@@ -41,9 +41,6 @@ const UserSchema = new mongoose.Schema({
     imageUrl: {
         type: String
     },
-    workedHours: {
-        type: String
-    },
     salary: {
         type: String,
         required: true
