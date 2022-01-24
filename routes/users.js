@@ -191,11 +191,8 @@ router.delete(
     }
 )
 
-<<<<<<< HEAD
 // router.delete(
 //     '/:id',
-=======
->>>>>>> 5c27d3c562a258f71165d29d3dc495cfed6d3970
 //     auth,
 //     async (req, res) => {
 //         console.log(req.params)
