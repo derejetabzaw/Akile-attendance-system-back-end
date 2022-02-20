@@ -71,7 +71,7 @@ router.put('/update-sites/:id',async(req,res)=>
         
     });
 
-//add validations
+//needs validations
 
 router.delete('/delete-sites/:id',(req,res)=>{
     console.log(req.params)
