@@ -150,9 +150,25 @@ router.put(
                 response.json({message:"operation failed"})
             }
         })  
-});
+    });
+// @route    UPDATE api/users/update-user/:id
+// @desc     Update a user
+// @access   Private
+router.put(
+    '/update-user/:id',
+    async(req,res)=>{
+        console.log(req.body)
+        Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
+            if(err){
+                console.log(err);
+                console.log(req.params.id)
+                response.json({message:"Update Failed"})
+            }
+        })        
+    }
+)
 
-// @route    DELETE api/users/:id
+// @route    DELETE api/users/delete-user/:id
 // @desc     Delete a user
 // @access   Private
 router.delete(
@@ -164,10 +180,10 @@ router.delete(
             
             let userId = req.params.id;
             User.deleteOne({staffId:userId},(err)=>{
-                if(err){console.log("Error While deleting")}
+                if(err){console.log("Error While Deleting")}
             })
           
-            return res.status(200).json({ msg: "User deleted successfully" });
+            return res.status(200).json({ msg: "User Deleted Successfully" });
         } catch (error) {
             console.log("Server error occured");
             res.status(500).json({ msg: "Server Error occured" });
@@ -175,6 +191,8 @@ router.delete(
     }
 )
 
+// router.delete(
+//     '/:id',
 //     auth,
 //     async (req, res) => {
 //         console.log(req.params)
@@ -187,23 +205,7 @@ router.delete(
 // >>>>>>> cfcaa1675677dd4278323a4560fdbe996c113747
 //     }
 //)
-// router.delete(
-//     '/:id',
-//     auth,
-//     async (req, res) => {
-//         try {
-//             let userId = req.params.id;
-//             const user = await User.findByIdAndRemove(userId);
-//             if (!user) {
-//                 return res.status(400).json({ error: "User not found" });
-//             }
-//             return res.status(200).json({ msg: "User deleted successfully" });
-//         } catch (error) {
-//             console.log("Server error occured");
-//             res.status(500).json({ msg: "Server Error occured" });
-//         }
-//     }
-// )
+
 
 // @route    Get api/users/:id
 // @desc     Get a single user
@@ -234,7 +236,7 @@ router.post(
     auth,
     async (req, res) =>{
         try {
-            console.log("res::",req.headers.authorization)
+            // console.log("res::",req.headers.authorization)
             //  check if user deviceId matches
             // console.log(req.body)
             const { deviceId, Location } = req.body;
@@ -251,23 +253,41 @@ router.post(
  
             // if (user.deviceId == deviceId) {
 
-            console.log(deviceId);
-            console.log(req.body);
-            console.log(req.user.id);
-            console.log(user);    
+            // console.log(deviceId);
+            // console.log(req.body);
+            // console.log(req.user.id);
+            // console.log(user);    
 
             //check if user already checkes in before
-            const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
-            if(checkInTime) {
-                console.log(checkInTime);
-                res.status(400).json({"error": "You already checked in for today"});
-            } else {
-                const attendance = new Attendance({
-                    date: moment().format("YYYY-MM-DD"),
-                    user: req.user.id,
-                    checkInTime: moment().format("HH:mm:ss"),
-                    checkOutTime: ""
-                });
+            // const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
+            // if(checkInTime) {
+            //     console.log(checkInTime);
+            //     res.status(400).json({"error": "You already checked in for today"});
+            // } else {
+            //     const attendance = new Attendance({
+            //         date: moment().format("YYYY-MM-DD"),
+            //         user: req.user.id,
+            //         checkInTime: moment().format("HH:mm:ss"),
+            //         checkOutTime: "",
+            //         workedHours: 0
+            //     });
+            // var previousTotalWorkedHours = await Attendance.findOne({user: req.user.id },{},{ sort: { 'checkOutTime' : -1 , 'date':-1 } });
+            // console.log("previous:",previousTotalWorkedHours)
+            
+            
+            const attendance = new Attendance({
+                date: moment().format("YYYY-MM-DD"),
+                user: req.user.id,
+                checkInTime: moment().format("HH:mm:ss"),
+                checkOutTime: "",
+                workedHours: 0, 
+            });
+            await attendance.save();
+            res.status(200).json(attendance);
+            console.log("Checked In:", attendance )
+            
+
+            
 
         //          await attendance.save();
     //            console.log("posted-attendance-information",attendance);
@@ -286,18 +306,18 @@ router.post(
                                     //console.log("posted-attendance-information",attendance);
                                     //res.status(200).json(attendance);
 
-        await attendance.save();
+        // await attendance.save();
 
-        // console.log("attendance", attendance)
-        // console.log("first_check_in_time", attendance.checkInTime)
-        console.log("posted-attendance-information",attendance);
+        // // console.log("attendance", attendance)
+        // // console.log("first_check_in_time", attendance.checkInTime)
+        // console.log("posted-attendance-information",attendance);
 
-        res.status(200).json(attendance);
+        // res.status(200).json(attendance);
 
             
         // } else {
         //    res.status(400).json({"error": "You can only check-in with your registered device"});
-        }
+        
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured"});
@@ -314,7 +334,7 @@ router.post(
     async (req, res) =>{
         try {
             const { deviceId } = req.body;
-            console.log("BODY:" , req.user)
+            // console.log("BODY:" , req.user)
             const user = await User.findOne({_id: req.user.id});
             if (deviceId == user.deviceId) {
 
@@ -323,7 +343,30 @@ router.post(
                     //date: moment().format("dddd, DD-MM-YYYY"),
                     date: moment().format("YYYY-MM-DD"),
                     user: req.user.id},{},{ sort: { 'checkInTime' : -1 } });
+
                 
+                // const workedHours = await Attendance.findOne({user: req.user.id }).select("workedHours");
+                // console.log("checkworkedhours:",workedHours)
+                let currentDate = new Date().toISOString().slice(0,10);
+
+
+                var previousLoginInformation = await Attendance.findOne({user: req.user.id , date:currentDate },{},{ sort: { 'checkOutTime' : -1, 'checkInTime' : -1 , 'date': 'desc' } });
+                
+                console.log("previousLoginInformation",previousLoginInformation)
+
+                if (previousLoginInformation.date===currentDate && previousLoginInformation.checkOutTime !==null) {
+                    var previousWorkedHours = previousLoginInformation.workedHours
+                    attendance.checkOutTime = moment().format("HH:mm:ss");
+                    const day = moment().format("dddd");
+                    const date = moment().format("DD,MM,YYYY");
+                    const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
+                    attendance.workedHours = parseFloat(previousWorkedHours) + totalHours[0]
+                    await attendance.save();
+                    await user.save();
+                    console.log("attendanceHASPREVIOUS: ", attendance)
+                    res.status(200).json(attendance);
+
+                }
                 
                 // if(attendance && attendance.checkOutTime == "") {
                 //     // add user checkout time
@@ -339,9 +382,10 @@ router.post(
                 // else {
                 //     return res.status(400).json({ msg: "You've to check-in before checking-out!"});
                 // }
-                attendance.checkOutTime = moment().format("HH:mm:ss");
-                const day = moment().format("dddd");
-                const date = moment().format("DD,MM,YYYY");
+                else{
+                    attendance.checkOutTime = moment().format("HH:mm:ss");
+                    const day = moment().format("dddd");
+                    const date = moment().format("DD,MM,YYYY");
                 // attendance.checkInDay = moment().format("YYYY-MM-DD");
                 
                 // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
@@ -351,21 +395,23 @@ router.post(
                 // console.log("attendance.checkInDay: ",attendance.checkInDay)
                 // const get_day = moment().format("dddd");
 
-                console.log("attendance.checkInTime: ",attendance.checkInTime)
-                console.log("attendance.checkOutTime: ",attendance.checkOutTime)
-                console.log("attendance.checkin_Date:" , attendance.date)
-                await attendance.save();
+                    // console.log("attendance.checkInTime: ",attendance.checkInTime)
+                    // console.log("attendance.checkOutTime: ",attendance.checkOutTime)
+                    // console.log("attendance.checkin_Date:" , attendance.date)
+                    // console.log("previous ", attendance.workedHours)
 
-                const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
-                console.log("totalHours: ",totalHours)
-                user.workedHours = totalHours[0]
+                
 
-                // console.log("attendance: ", attendance)
-                //console.log("user: ",user)
-                console.log("workedHours: ",user.workedHours)
-                await user.save();
-                res.status(200).json(attendance);
+                    const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
+                    attendance.workedHours = parseFloat(totalHours[0])
 
+                    // console.log("after ", attendance.workedHours)
+
+                    await attendance.save();
+                    await user.save();
+                    console.log("attendance: ", attendance)
+                    res.status(200).json(attendance);
+                }
                 
             } else {
                 res.status(400).json({"error": "You can only check-out with your registered device"});

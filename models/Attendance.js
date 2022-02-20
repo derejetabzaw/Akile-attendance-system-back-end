@@ -13,6 +13,9 @@ const AttendanceSchema = mongoose.Schema({
     },
     checkOutTime: {
         type: String,
+    },
+    workedHours: {
+        type: Number
     }
 });
 
