@@ -34,6 +34,7 @@ router.post(
         }
         const{sitename,location,latitude,longitude,sitemanager,paintarea} = req.body;
 
+
         try{
         
         let site = new Site({
