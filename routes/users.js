@@ -273,15 +273,20 @@ router.post(
             //     });
             // var previousTotalWorkedHours = await Attendance.findOne({user: req.user.id },{},{ sort: { 'checkOutTime' : -1 , 'date':-1 } });
             // console.log("previous:",previousTotalWorkedHours)
-            
-            
+            let currentDate = new Date().toISOString().slice(0,10);
+            var previousLoginInformation = await Attendance.findOne({user: req.user.id , date:currentDate },{},{ sort: { 'checkOutTime' : -1, 'checkInTime' : -1 , 'date': 'desc' } });
             const attendance = new Attendance({
                 date: moment().format("YYYY-MM-DD"),
                 user: req.user.id,
                 checkInTime: moment().format("HH:mm:ss"),
                 checkOutTime: "",
+                numberOfCheckIn: 0,
                 workedHours: 0, 
             });
+            var previousNumberOfCheckins = previousLoginInformation.numberOfCheckIn
+
+            attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins)
+
             await attendance.save();
             res.status(200).json(attendance);
             console.log("Checked In:", attendance )
@@ -336,8 +341,9 @@ router.post(
             const { deviceId } = req.body;
             // console.log("BODY:" , req.user)
             const user = await User.findOne({_id: req.user.id});
-            if (deviceId == user.deviceId) {
-
+            //if (deviceId == user.deviceId) {
+            if (deviceId != user.deviceId) {
+            
                 const attendance = await Attendance.findOne({
                     // date: moment().format("dddd-YYYY-MM-DD"), 
                     //date: moment().format("dddd, DD-MM-YYYY"),
@@ -356,11 +362,17 @@ router.post(
 
                 if (previousLoginInformation.date===currentDate && previousLoginInformation.checkOutTime !==null) {
                     var previousWorkedHours = previousLoginInformation.workedHours
+
+                    var previousNumberOfCheckins = previousLoginInformation.numberOfCheckIn
+                    
                     attendance.checkOutTime = moment().format("HH:mm:ss");
                     const day = moment().format("dddd");
                     const date = moment().format("DD,MM,YYYY");
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(previousWorkedHours) + totalHours[0]
+                    
+                    attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins) + 1
+
                     await attendance.save();
                     await user.save();
                     console.log("attendanceHASPREVIOUS: ", attendance)
@@ -369,7 +381,7 @@ router.post(
                 }
                 
                 // if(attendance && attendance.checkOutTime == "") {
-                //     // add user checkout time
+                // add user checkout time
                 //     attendance.checkOutTime = moment().format("HH:mm:ss");
                 //     await attendance.save();
                 //     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
@@ -400,13 +412,13 @@ router.post(
                     // console.log("attendance.checkin_Date:" , attendance.date)
                     // console.log("previous ", attendance.workedHours)
 
-                
-
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(totalHours[0])
 
                     // console.log("after ", attendance.workedHours)
 
+                    attendance.numberOfCheckIn = attendance.numberOfCheckIn + 1
+                    
                     await attendance.save();
                     await user.save();
                     console.log("attendance: ", attendance)
