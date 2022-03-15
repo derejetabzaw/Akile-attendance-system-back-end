@@ -140,21 +140,6 @@ router.get(
 // @desc     Update a user
 // @access   Private
 router.put(
-    '/update-users/:id',
-    async(req,res)=>{
-        console.log(req.body)
-        Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
-            if(err){
-                console.log(err);
-                console.log(req.params.id)
-                response.json({message:"operation failed"})
-            }
-        })  
-    });
-// @route    UPDATE api/users/update-user/:id
-// @desc     Update a user
-// @access   Private
-router.put(
     '/update-user/:id',
     async(req,res)=>{
         console.log(req.body)
@@ -242,7 +227,7 @@ router.post(
             const { deviceId, Location } = req.body;
             // const { Location } = parseInt(req.body.position);
             const user = await User.findOne({_id: req.user.id});
-            
+                        
             // console.log(deviceId)
             // console.log(req.body)
             // console.log(req.user.id)
@@ -287,9 +272,21 @@ router.post(
 
             attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins)
 
-            await attendance.save();
-            res.status(200).json(attendance);
-            console.log("Checked In:", attendance )
+            if (currentDate == attendance.date){   // Not sure how to get todays date and device date while checkin
+                if (attendance.numberOfCheckIn < 4){
+                    await attendance.save();
+                    res.status(200).json(attendance);
+                    console.log("Checked In:", attendance )
+                }
+                else{
+                    console.log("Error Checking In:", attendance )
+                    console.log("Number of Checkin per day exceeded 3" )
+                }
+            }
+            else{
+                console.log("Error! Date is not equal to today.")
+            }
+            
             
 
             
