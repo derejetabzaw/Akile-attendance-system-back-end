@@ -15,7 +15,7 @@ const Attendance = require('../models/Attendance');
 const Site = require('../models/Site');
 const { check, validationResult } = require('express-validator');
 
-const MIME_TYPES ={
+const MIME_TYPES = {
     'image/jpeg': 'jpg',
     'image/jpeg': 'jpg',
     'image/png': 'png'
@@ -27,7 +27,7 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const extension = MIME_TYPES[file.mimetype];
-        cb(null, file.fieldname + '-' + Date.now() + "." + extension );
+        cb(null, file.fieldname + '-' + Date.now() + "." + extension);
     }
 });
 
@@ -50,7 +50,7 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId , salary , telephone } = req.body;
+        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId, salary, telephone } = req.body;
         try {
             let user = await User.findOne({ name });
             if (user) {
@@ -65,15 +65,15 @@ router.post(
 
 
             let imageUrl = "";
-            if(image) {
-                req.file.filename ? imageUrl=__dirname + '/../uploads/' + req.file.filename: imageUrl="";
-            
-            const image = {
-                data: fs.readFileSync(imageUrl),
-                contentType: 'image/png'
+            if (image) {
+                req.file.filename ? imageUrl = __dirname + '/../uploads/' + req.file.filename : imageUrl = "";
+
+                const image = {
+                    data: fs.readFileSync(imageUrl),
+                    contentType: 'image/png'
                 }
             }
-            
+
 
             user = new User({
                 name,
@@ -110,7 +110,7 @@ router.post(
             // };
 
             // return res.status(200).json({password: generatedPassword});
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId','deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite','salary','telephone']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId', 'deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
 
         } catch (error) {
             console.log(error.message);
@@ -127,9 +127,9 @@ router.get(
     // auth,
     async (req, res) => {
         try {
-            
+
             const users = await User.find();
-            return res.status(200).json( {users});
+            return res.status(200).json({ users });
         } catch (error) {
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });
@@ -141,32 +141,43 @@ router.get(
 // @access   Private
 router.put(
     '/update-users/:id',
-    async(req,res)=>{
+    async (req, res) => {
+        console.log("ID:", req.params.id)
         console.log(req.body)
-        Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
-            if(err){
+        console.log(User)
+        User.findOneAndUpdate({staffId:req.params.id},{$set:{
+            'password':req.body.name,
+            'email':req.body.email,
+            'isAdmin':req.body.isAdmin,
+            'position':req.body.position,
+            'workingSite':req.body.workingSite,
+            'salary':req.body.salary,
+            'telephone':req.body.telephone
+        }},{new:true} ,(err, response) => {
+            if (err) {
                 console.log(err);
                 console.log(req.params.id)
-                response.json({message:"operation failed"})
+                response.json({ message: "operation failed" })
             }
-        })  
+
+        })
     });
 // @route    UPDATE api/users/update-user/:id
 // @desc     Update a user
 // @access   Private
-router.put(
-    '/update-user/:id',
-    async(req,res)=>{
-        console.log(req.body)
-        Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
-            if(err){
-                console.log(err);
-                console.log(req.params.id)
-                response.json({message:"Update Failed"})
-            }
-        })        
-    }
-)
+// router.put(
+//     '/update-user/:id',
+//     async(req,res)=>{
+//         console.log(req.body)
+//         Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
+//             if(err){
+//                 console.log(err);
+//                 console.log(req.params.id)
+//                 response.json({message:"Update Failed"})
+//             }
+//         })        
+//     }
+// )
 
 // @route    DELETE api/users/delete-user/:id
 // @desc     Delete a user
@@ -177,12 +188,12 @@ router.delete(
     // auth, 
     async (req, res) => {
         try {
-            
+
             let userId = req.params.id;
-            User.deleteOne({staffId:userId},(err)=>{
-                if(err){console.log("Error While Deleting")}
+            User.deleteOne({ staffId: userId }, (err) => {
+                if (err) { console.log("Error While Deleting") }
             })
-          
+
             return res.status(200).json({ msg: "User Deleted Successfully" });
         } catch (error) {
             console.log("Server error occured");
@@ -234,15 +245,15 @@ router.get(
 router.post(
     '/checkin',
     auth,
-    async (req, res) =>{
+    async (req, res) => {
         try {
             // console.log("res::",req.headers.authorization)
             //  check if user deviceId matches
             // console.log(req.body)
             const { deviceId, Location } = req.body;
             // const { Location } = parseInt(req.body.position);
-            const user = await User.findOne({_id: req.user.id});
-            
+            const user = await User.findOne({ _id: req.user.id });
+
             // console.log(deviceId)
             // console.log(req.body)
             // console.log(req.user.id)
@@ -250,7 +261,7 @@ router.post(
 
             // console.log(Location)  // On line 215 it prints the position so this line not needed
             // line 213 - 216 copied to 223 - 226 before commented
- 
+
             // if (user.deviceId == deviceId) {
 
             // console.log(deviceId);
@@ -273,15 +284,15 @@ router.post(
             //     });
             // var previousTotalWorkedHours = await Attendance.findOne({user: req.user.id },{},{ sort: { 'checkOutTime' : -1 , 'date':-1 } });
             // console.log("previous:",previousTotalWorkedHours)
-            let currentDate = new Date().toISOString().slice(0,10);
-            var previousLoginInformation = await Attendance.findOne({user: req.user.id , date:currentDate },{},{ sort: { 'checkOutTime' : -1, 'checkInTime' : -1 , 'date': 'desc' } });
+            let currentDate = new Date().toISOString().slice(0, 10);
+            var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
             const attendance = new Attendance({
                 date: moment().format("YYYY-MM-DD"),
                 user: req.user.id,
                 checkInTime: moment().format("HH:mm:ss"),
                 checkOutTime: "",
                 numberOfCheckIn: 0,
-                workedHours: 0, 
+                workedHours: 0,
             });
             var previousNumberOfCheckins = previousLoginInformation.numberOfCheckIn
 
@@ -289,43 +300,43 @@ router.post(
 
             await attendance.save();
             res.status(200).json(attendance);
-            console.log("Checked In:", attendance )
-            
+            console.log("Checked In:", attendance)
 
-            
 
-        //          await attendance.save();
-    //            console.log("posted-attendance-information",attendance);
+
+
+            //          await attendance.save();
+            //            console.log("posted-attendance-information",attendance);
             //      res.status(200).json(attendance);
-        //    } 
-                            // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
-                                    //const attendance = new Attendance({
-                                    //date: moment().format("dddd, DD-MM-YYYY"),
-                                    //user: req.user.id,
-                                    //checkInTime: moment().format("HH:mm:ss"),
-                                    //checkOutTime: ""
-                                    //});
-                                    //await attendance.save();
-                                    // console.log("attendance", attendance)
-                                    // console.log("first_check_in_time", attendance.checkInTime)
-                                    //console.log("posted-attendance-information",attendance);
-                                    //res.status(200).json(attendance);
+            //    } 
+            // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
+            //const attendance = new Attendance({
+            //date: moment().format("dddd, DD-MM-YYYY"),
+            //user: req.user.id,
+            //checkInTime: moment().format("HH:mm:ss"),
+            //checkOutTime: ""
+            //});
+            //await attendance.save();
+            // console.log("attendance", attendance)
+            // console.log("first_check_in_time", attendance.checkInTime)
+            //console.log("posted-attendance-information",attendance);
+            //res.status(200).json(attendance);
 
-        // await attendance.save();
+            // await attendance.save();
 
-        // // console.log("attendance", attendance)
-        // // console.log("first_check_in_time", attendance.checkInTime)
-        // console.log("posted-attendance-information",attendance);
+            // // console.log("attendance", attendance)
+            // // console.log("first_check_in_time", attendance.checkInTime)
+            // console.log("posted-attendance-information",attendance);
 
-        // res.status(200).json(attendance);
+            // res.status(200).json(attendance);
 
-            
-        // } else {
-        //    res.status(400).json({"error": "You can only check-in with your registered device"});
-        
+
+            // } else {
+            //    res.status(400).json({"error": "You can only check-in with your registered device"});
+
         } catch (error) {
             console.log(error.message);
-            res.status(500).json({ msg: "Server Error occured"});
+            res.status(500).json({ msg: "Server Error occured" });
         }
     }
 );
@@ -336,41 +347,42 @@ router.post(
 router.post(
     '/checkout',
     auth,
-    async (req, res) =>{
+    async (req, res) => {
         try {
             const { deviceId } = req.body;
             // console.log("BODY:" , req.user)
-            const user = await User.findOne({_id: req.user.id});
+            const user = await User.findOne({ _id: req.user.id });
             //if (deviceId == user.deviceId) {
             if (deviceId != user.deviceId) {
-            
+
                 const attendance = await Attendance.findOne({
                     // date: moment().format("dddd-YYYY-MM-DD"), 
                     //date: moment().format("dddd, DD-MM-YYYY"),
                     date: moment().format("YYYY-MM-DD"),
-                    user: req.user.id},{},{ sort: { 'checkInTime' : -1 } });
+                    user: req.user.id
+                }, {}, { sort: { 'checkInTime': -1 } });
 
-                
+
                 // const workedHours = await Attendance.findOne({user: req.user.id }).select("workedHours");
                 // console.log("checkworkedhours:",workedHours)
-                let currentDate = new Date().toISOString().slice(0,10);
+                let currentDate = new Date().toISOString().slice(0, 10);
 
 
-                var previousLoginInformation = await Attendance.findOne({user: req.user.id , date:currentDate },{},{ sort: { 'checkOutTime' : -1, 'checkInTime' : -1 , 'date': 'desc' } });
-                
-                console.log("previousLoginInformation",previousLoginInformation)
+                var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
 
-                if (previousLoginInformation.date===currentDate && previousLoginInformation.checkOutTime !==null) {
+                console.log("previousLoginInformation", previousLoginInformation)
+
+                if (previousLoginInformation.date === currentDate && previousLoginInformation.checkOutTime !== null) {
                     var previousWorkedHours = previousLoginInformation.workedHours
 
                     var previousNumberOfCheckins = previousLoginInformation.numberOfCheckIn
-                    
+
                     attendance.checkOutTime = moment().format("HH:mm:ss");
                     const day = moment().format("dddd");
                     const date = moment().format("DD,MM,YYYY");
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(previousWorkedHours) + totalHours[0]
-                    
+
                     attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins) + 1
 
                     await attendance.save();
@@ -379,7 +391,7 @@ router.post(
                     res.status(200).json(attendance);
 
                 }
-                
+
                 // if(attendance && attendance.checkOutTime == "") {
                 // add user checkout time
                 //     attendance.checkOutTime = moment().format("HH:mm:ss");
@@ -394,18 +406,18 @@ router.post(
                 // else {
                 //     return res.status(400).json({ msg: "You've to check-in before checking-out!"});
                 // }
-                else{
+                else {
                     attendance.checkOutTime = moment().format("HH:mm:ss");
                     const day = moment().format("dddd");
                     const date = moment().format("DD,MM,YYYY");
-                // attendance.checkInDay = moment().format("YYYY-MM-DD");
-                
-                // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
-                //     console.log( "Here" );
-                //   });
-                
-                // console.log("attendance.checkInDay: ",attendance.checkInDay)
-                // const get_day = moment().format("dddd");
+                    // attendance.checkInDay = moment().format("YYYY-MM-DD");
+
+                    // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
+                    //     console.log( "Here" );
+                    //   });
+
+                    // console.log("attendance.checkInDay: ",attendance.checkInDay)
+                    // const get_day = moment().format("dddd");
 
                     // console.log("attendance.checkInTime: ",attendance.checkInTime)
                     // console.log("attendance.checkOutTime: ",attendance.checkOutTime)
@@ -418,19 +430,19 @@ router.post(
                     // console.log("after ", attendance.workedHours)
 
                     attendance.numberOfCheckIn = attendance.numberOfCheckIn + 1
-                    
+
                     await attendance.save();
                     await user.save();
                     console.log("attendance: ", attendance)
                     res.status(200).json(attendance);
                 }
-                
+
             } else {
-                res.status(400).json({"error": "You can only check-out with your registered device"});
-            }  
+                res.status(400).json({ "error": "You can only check-out with your registered device" });
+            }
         } catch (error) {
             console.log(error.message);
-            res.status(500).json({ msg: "Server Error occured"});
+            res.status(500).json({ msg: "Server Error occured" });
         }
     }
 );
