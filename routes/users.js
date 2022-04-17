@@ -180,18 +180,18 @@ router.put(
 //     }
 // )
 
-    '/update-user/:id',
-    async(req,res)=>{
-        console.log(req.body)
-        Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
-            if(err){
-                console.log(err);
-                console.log(req.params.id)
-                response.json({message:"Update Failed"})
-            }
-        })        
-    }
-)
+//     '/update-user/:id',
+//     async(req,res)=>{
+//         console.log(req.body)
+//         Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
+//             if(err){
+//                 console.log(err);
+//                 console.log(req.params.id)
+//                 response.json({message:"Update Failed"})
+//             }
+//         })        
+//     }
+// )
 
 
 // @route    DELETE api/users/delete-user/:id
@@ -267,13 +267,8 @@ router.post(
             // console.log(req.body)
             const { deviceId, Location } = req.body;
             // const { Location } = parseInt(req.body.position);
-<<<<<<< HEAD
-            const user = await User.findOne({ _id: req.user.id });
-
-=======
             const user = await User.findOne({_id: req.user.id});
                         
->>>>>>> 1bb1c4b6ae89082eb60e28c05d0ce78fdbeee0c9
             // console.log(deviceId)
             // console.log(req.body)
             // console.log(req.user.id)
@@ -318,13 +313,6 @@ router.post(
 
             attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins)
 
-<<<<<<< HEAD
-            await attendance.save();
-            res.status(200).json(attendance);
-            console.log("Checked In:", attendance)
-
-
-=======
             if (currentDate == attendance.date){   // Not sure how to get todays date and device date while checkin
                 if (attendance.numberOfCheckIn < 4){
                     await attendance.save();
@@ -341,7 +329,6 @@ router.post(
             }
             
             
->>>>>>> 1bb1c4b6ae89082eb60e28c05d0ce78fdbeee0c9
 
 
             //          await attendance.save();
