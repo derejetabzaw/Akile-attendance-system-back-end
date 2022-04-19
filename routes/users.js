@@ -129,7 +129,7 @@ router.get(
         try {
 
             const users = await User.find();
-            return res.status(200).json({ users });
+            return res.status(200).json({users});
         } catch (error) {
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });
@@ -145,15 +145,16 @@ router.put(
     async (req, res) => {
         console.log("ID:", req.params.id)
         console.log(req.body)
-        console.log(User)
-        User.findOneAndUpdate({staffId:req.params.id},{$set:{
-            'password':req.body.name,
+        console.log(typeof(req.body.email))
+        User.findOneAndUpdate({_id:req.params.id},{$set:{
+            'password':req.body.password,
             'email':req.body.email,
             'isAdmin':req.body.isAdmin,
             'position':req.body.position,
             'workingSite':req.body.workingSite,
             'salary':req.body.salary,
-            'telephone':req.body.telephone
+            'telephone':req.body.telephone,
+            'deviceId':req.body.deviceId
         }},{new:true} ,(err, response) => {
             if (err) {
                 console.log(err);
