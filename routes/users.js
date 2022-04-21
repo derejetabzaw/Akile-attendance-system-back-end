@@ -129,7 +129,7 @@ router.get(
         try {
 
             const users = await User.find();
-            return res.status(200).json({users});
+            return res.status(200).json({ users });
         } catch (error) {
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });
@@ -144,25 +144,32 @@ router.put(
     '/update-users/:id',
     async (req, res) => {
         console.log("ID:", req.params.id)
-        console.log(req.body)
-        console.log(typeof(req.body.email))
-        User.findOneAndUpdate({_id:req.params.id},{$set:{
-            'password':req.body.password,
-            'email':req.body.email,
-            'isAdmin':req.body.isAdmin,
-            'position':req.body.position,
-            'workingSite':req.body.workingSite,
-            'salary':req.body.salary,
-            'telephone':req.body.telephone,
-            'deviceId':req.body.deviceId
-        }},{new:true} ,(err, response) => {
-            if (err) {
-                console.log(err);
-                console.log(req.params.id)
-                response.json({ message: "operation failed" })
-            }
+        console.log(req.body.name)
+        
+        try {
 
-        })
+            let userId = req.params.id;
+            User.findOneAndUpdate({staffId:userId},{$set:{
+                'password':req.body.name,
+                'email':req.body.email,
+                'isAdmin':req.body.isAdmin,
+                'deviceId':req.body.deviceId,
+                'position':req.body.position,
+                'workingSite':req.body.workingSite,
+                'salary':req.body.salary,
+                'telephone':req.body.telephone
+            }},{new:true} ,(err, response) => {
+                if (err) {
+                    console.log(err);
+                    console.log(req.params.id)
+                    response.json({ message: "operation failed" })
+                }
+            })
+            return res.status(200).json({ msg: "User Updated Successfully" });
+        } catch (error) {
+            console.log("Server error occured");
+            res.status(500).json({ msg: "Server Error occured" });
+        }            
     });
 // @route    UPDATE api/users/update-user/:id
 // @desc     Update a user
@@ -263,7 +270,7 @@ router.post(
     auth,
     async (req, res) => {
         try {
-            // console.log("res::",req.headers.authorization)
+            console.log("res::",req.headers.authorization, "\n")
             //  check if user deviceId matches
             // console.log(req.body)
             const { deviceId, Location } = req.body;
@@ -286,42 +293,50 @@ router.post(
             // console.log(user);    
 
             //check if user already checkes in before
-            // const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
+            const checkInTime= await Attendance.findOne({date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
             // if(checkInTime) {
             //     console.log(checkInTime);
             //     res.status(400).json({"error": "You already checked in for today"});
             // } else {
-            //     const attendance = new Attendance({
-            //         date: moment().format("YYYY-MM-DD"),
-            //         user: req.user.id,
-            //         checkInTime: moment().format("HH:mm:ss"),
-            //         checkOutTime: "",
-            //         workedHours: 0
-            //     });
+                // const attendance = new Attendance({
+                //     date: moment().format("YYYY-MM-DD"),
+                //     user: req.user.id,
+                //     checkInTime: moment().format("HH:mm:ss"),
+                //     checkOutTime: "",
+                //     workedHours: 0
+                // });
             // var previousTotalWorkedHours = await Attendance.findOne({user: req.user.id },{},{ sort: { 'checkOutTime' : -1 , 'date':-1 } });
             // console.log("previous:",previousTotalWorkedHours)
+            
             let currentDate = new Date().toISOString().slice(0, 10);
             var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
+            
+            var previousNumberOfCheckins = previousLoginInformation
+            
             const attendance = new Attendance({
                 date: moment().format("YYYY-MM-DD"),
                 user: req.user.id,
                 checkInTime: moment().format("HH:mm:ss"),
                 checkOutTime: "",
-                numberOfCheckIn: 0,
+                numberOfCheckIn: 1,
                 workedHours: 0,
             });
-            var previousNumberOfCheckins = previousLoginInformation.numberOfCheckIn
+        
+            if (previousNumberOfCheckins != null){
+                attendance.numberOfCheckIn = previousNumberOfCheckins.numberOfCheckIn + 1;
+            }
 
-            attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins)
-
+            console.log("USERID:" , req.user.id)
+            console.log("Current numberOfCheckIn", attendance.numberOfCheckIn)
+            
             if (currentDate == attendance.date){   // Not sure how to get todays date and device date while checkin
-                if (attendance.numberOfCheckIn < 4){
+                if (attendance.numberOfCheckIn < 4 ){
+                     
                     await attendance.save();
                     res.status(200).json(attendance);
-                    console.log("Checked In:", attendance )
                 }
                 else{
-                    console.log("Error Checking In:", attendance )
+                    console.log("Error Checking In:", attendance.numberOfCheckIn )
                     console.log("Number of Checkin per day exceeded 3" )
                 }
             }
@@ -329,9 +344,6 @@ router.post(
                 console.log("Error! Date is not equal to today.")
             }
             
-            
-
-
             //          await attendance.save();
             //            console.log("posted-attendance-information",attendance);
             //      res.status(200).json(attendance);
