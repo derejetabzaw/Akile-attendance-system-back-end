@@ -39,8 +39,8 @@ router.post(
         }
         try {
             console.log("Try");
-        } catch(e) { // Missing this
-            console.error(e); 
+        } catch (e) { // Missing this
+            console.error(e);
         }
 
         jwt.sign(
@@ -49,7 +49,7 @@ router.post(
             { expiresIn: '1 days' },
             (err, token) => {
                 if (err) throw err;
-                return res.status(200).json({ 
+                return res.status(200).json({
                     accessToken: token,
                     staffId: user.staffId,
                     image: user.imageUrl
