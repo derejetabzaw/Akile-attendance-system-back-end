@@ -40,6 +40,7 @@ const upload = multer({ storage: storage }).single('image');
 // @access   Public
 router.post(
     '/signup',
+    verifyJWT,
     upload,
     [
         check('name', 'name is required!').not().isEmpty(),
@@ -144,6 +145,7 @@ router.get(
 router.put(
 
     '/update-users/:id',
+    verifyJWT,
     async (req, res) => {
         console.log("ID:", req.params.id)
 
@@ -212,7 +214,7 @@ router.put(
 // @access   Private
 router.delete(
     '/delete-user/:id',
-
+    verifyJWT,
     // auth, 
     async (req, res) => {
         try {
