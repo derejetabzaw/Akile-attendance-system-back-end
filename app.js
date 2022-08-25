@@ -5,7 +5,6 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const multer = require('multer');
 
-const verifyJWT = require('./middlewares/verifyJWT');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -27,8 +26,8 @@ const site = require('./routes/sites');
             //useMongoClient: true,
             useNewUrlParser: true,
             useUnifiedTopology: true,
-            useCreateIndex: true,
-            useFindAndModify: false
+            // useCreateIndex: true,
+            // useFindAndModify: false
         });
         console.log('MongoDB Connected...');
     } catch (error) {
@@ -40,9 +39,7 @@ const site = require('./routes/sites');
 
 
 // Define database routes
-app.use('/api/v1/authSignin', require('./routes/authSignin'));
 app.use('/api/v1/auth', auth);
-app.use(verifyJWT);
 app.use('/api/v1/users', user);
 app.use('/api/v1/attendance', attendance);
 app.use('/api/v1/sites', site);
