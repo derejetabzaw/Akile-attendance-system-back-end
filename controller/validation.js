@@ -10,7 +10,7 @@ const loginValidation = data => {
                   .required(),
             password: Joi
                   .string()
-                  .min(3)
+                  .min(5)
                   .required()
       }
 

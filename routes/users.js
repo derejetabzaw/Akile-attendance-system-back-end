@@ -139,11 +139,10 @@ router.get(
         }
     }
 );
-// @route    UPDATE api/users/:id
+// @route    UPDATE api/users/update-user/:id
 // @desc     Update a user
 // @access   Private
 router.put(
-
     '/update-users/:id',
     verifyJWT,
     async (req, res) => {
@@ -178,36 +177,6 @@ router.put(
             res.status(500).json({ msg: "Server Error occured" });
         }
     });
-// @route    UPDATE api/users/update-user/:id
-// @desc     Update a user
-// @access   Private
-// router.put(
-//     '/update-user/:id',
-//     async(req,res)=>{
-//         console.log(req.body)
-//         Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
-//             if(err){
-//                 console.log(err);
-//                 console.log(req.params.id)
-//                 response.json({message:"Update Failed"})
-//             }
-//         })        
-//     }
-// )
-
-//     '/update-user/:id',
-//     async(req,res)=>{
-//         console.log(req.body)
-//         Site.updateOne({_id:req.params.id},{$set:req.body},(err,response)=>{
-//             if(err){
-//                 console.log(err);
-//                 console.log(req.params.id)
-//                 response.json({message:"Update Failed"})
-//             }
-//         })        
-//     }
-// )
-
 
 // @route    DELETE api/users/delete-user/:id
 // @desc     Delete a user
@@ -232,39 +201,30 @@ router.delete(
     }
 )
 
-// router.delete(
-//     '/:id',
-//     auth,
-//     async (req, res) => {
-//         console.log(req.params)
-//        User.deleteOne({ _id:req.params.id},(err)=>{
-//            console.log("User deleted")
-//             if(err){
-//                 res.json({message:"Error Occured cannot complete that operation"})
-//             }
-//         })
-// >>>>>>> cfcaa1675677dd4278323a4560fdbe996c113747
-//     }
-//)
-
-
 // @route    Get api/users/:id
 // @desc     Get a single user
 // @access   Private
 router.get(
     '/:id',
-    auth,
+    verifyJWT,
     async (req, res) => {
         try {
             let userId = req.params.id;
-            const user = await User.findOne({ _id: userId });
+            const user = await User.findOne({ staffId: userId })
+
             if (!user) {
-                return res.status(400).json({ error: "User not found" });
+                return res
+                    .status(400)
+                    .json({ error: "User not found" })
             }
-            return res.status(200).json({ user });
+            return res
+                .status(200)
+                .json({ user })
         } catch (error) {
-            console.log(error.message);
-            res.status(500).json({ msg: "Server Error occured" });
+            console.log(error.message)
+            return res
+                .status(500)
+                .json({ msg: "Server Error occured!" })
         }
     }
 );

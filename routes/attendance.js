@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middlewares/auth');
+const verifyJWT = require('../middlewares/verifyJWT');
 
-// const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 
 // @route    GET api/attendances
@@ -10,16 +9,20 @@ const Attendance = require('../models/Attendance');
 // @access   Private
 router.get(
     '/',
-    // auth,
+    verifyJWT,
     async (req, res) => {
         try {
-            
             const attendances = await Attendance.find();
-            return res.status(200).json({ attendances });
+            return res
+                .status(200)
+                .json({ attendances });
         } catch (error) {
             console.log("Server error occured");
-            return res.status(500).json({ msg: "Server Error occured" });
+            return res
+                .status(500)
+                .json({ msg: "Server Error occured" });
         }
     }
-);
+)
+
 module.exports = router;

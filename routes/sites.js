@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middlewares/auth');
 const verifyJWT = require('../middlewares/verifyJWT');
 const { check, validationResult } = require('express-validator');
 const _ = require('lodash');
@@ -16,7 +15,6 @@ router.get(
     verifyJWT,
     async (req, res) => {
         try {
-
             const sites = await Site.find();
             return res.status(200).json({ sites });// Not modified 
         } catch (error) {
@@ -29,16 +27,16 @@ router.post(
     '/addsite',
     verifyJWT,
     async (req, res) => {
-        const errors = validationResult(req);
+        const errors = validationResult(req)
+
         if (!errors.isEmpty()) {
-            return res.status(400).json({ error: errors.array() });
-
+            return res
+                .status(400)
+                .json({ error: errors.array() })
         }
-        const { sitename, location, latitude, longitude, sitemanager, paintarea } = req.body;
-
+        const { sitename, location, latitude, longitude, sitemanager, paintarea } = req.body
 
         try {
-
             let site = new Site({
                 sitename,
                 location,
@@ -48,12 +46,17 @@ router.post(
                 paintarea
             })
             console.log(site);
+
             await site.save();
-            return res.status(200).json(_.pick(site, ['_id', 'sitename', 'location', 'latitude', 'longitude', 'sitemanager', 'paintarea']));
+            return res
+                .status(200)
+                .json(_.pick(site, ['_id', 'sitename', 'location', 'latitude', 'longitude', 'sitemanager', 'paintarea']));
 
         } catch (error) {
             console.log(error)
-            return res.status(500).json({ error: [{ msg: "Internal sever error" }] });
+            return res
+                .status(500)
+                .json({ error: [{ msg: "Internal sever error" }] });
         }
 
     }

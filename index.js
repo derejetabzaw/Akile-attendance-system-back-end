@@ -2,6 +2,13 @@ require('dotenv').config()
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
+const bodyParser = require('body-parser');
+const cors = require('cors');
+
+//Not known yet but needed for mobile
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+app.use(cors())
 
 const PORT = process.env.PORT || 8081;
 
@@ -25,6 +32,7 @@ const PORT = process.env.PORT || 8081;
 
 //Routes
 const authRoute = require('./routes/authSignin')
+const authMobile = require('./routes/auth');
 const usersRoute = require('./routes/users')
 const attendanceRoute = require('./routes/attendance');
 const siteRoute = require('./routes/sites');
@@ -34,11 +42,12 @@ app.use(express.json())
 
 //Route Middleware
 app.use('/api/v1', authRoute)
+app.use('/api/v1/auth', authMobile);
 app.use('/api/v1/users', usersRoute)
 app.use('/api/v1/attendance', attendanceRoute);
 app.use('/api/v1/sites', siteRoute);
 
-
+//Backens server 
 app.listen(PORT, () =>
       console.log(`Server running on port ${PORT}`)
 )

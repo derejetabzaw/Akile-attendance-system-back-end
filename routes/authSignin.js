@@ -10,6 +10,7 @@ router.post(
       '/signin',
       async (req, res) => {
             const { error } = loginValidation(req.body)
+
             if (error)
                   return res
                         .status(400)
@@ -20,22 +21,52 @@ router.post(
             const user = await User.findOne({
                   staffId: req.body.staffId
             })
+
             if (!user)
                   return res
                         .status(400)
                         .send('StaffId not found!!!')
+
             //Checking if password exists
-            const validPass = await bcrypt.compare(req.body.password, user.password)
-            if (!validPass)
-                  return res
-                        .status(400)
-                        .send('Invalid Password')
-            //Token creation and assignment
-            const token = jwt.sign(
-                  { _id: user._id },
-                  process.env.ACCESS_TOKEN_SECRET
+            const validatePassword = await bcrypt.compare(
+                  req.body.password,
+                  user.password
             )
-            res.header('authToken', token).send(token)
+
+            if (!validatePassword)
+                  return res
+                        .status(401)
+                        .send('Incorrect Staff-Id or Password')
+
+            //Token creation and assignment
+            try {
+                  jwt.sign(
+                        { _id: user.id },
+                        process.env.ACCESS_TOKEN_SECRET,
+                        //expiresIn time should be agreed upon within the team 
+                        { expiresIn: '6h' },
+                        (err, token) => {
+                              if (err)
+                                    throw err
+                              return res
+                                    .header(
+                                          'authorization',
+                                          token
+                                    )
+                                    .status(200)
+                                    .json({
+                                          accessToken: token,
+                                          staffId: user.staffId,
+                                    }
+                                    )
+                        }
+                  )
+            }
+            catch (error) {
+                  return res
+                        .status(500)
+                        .json({ message: 'Server error' })
+            }
       }
 )
 
