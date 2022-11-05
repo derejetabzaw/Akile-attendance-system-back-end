@@ -1,11 +1,10 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
 // Verify token 
-
 module.exports = function (req, res, next) {
       //Format of TOKEN
       //Authorization: Bearer <access_token>
-      const tokenHeader = req.header('Authorization')
+      const tokenHeader = req.header('authorization')
 
       // let id = localStorage.getItem("token");
       // console.log(id);
