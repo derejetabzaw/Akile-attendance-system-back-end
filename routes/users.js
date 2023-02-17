@@ -40,7 +40,7 @@ const upload = multer({ storage: storage }).single('image');
 // @access   Public
 router.post(
     '/signup',
-    verifyJWT,
+   // verifyJWT,
     upload,
     [
         check('name', 'name is required!').not().isEmpty(),
@@ -190,7 +190,8 @@ router.delete(
 
             let userId = req.params.id;
             User.deleteOne({ staffId: userId }, (err) => {
-                if (err) { console.log("Error While Deleting") }
+                if (err) { console.log("Error While Deleting")  }
+                //console.log("Error While Deleting") }
             })
 
             return res.status(200).json({ msg: "User Deleted Successfully" });
@@ -261,22 +262,23 @@ router.post(
 
             //check if user already checkes in before
             const checkInTime = await Attendance.findOne({ date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
+            console.log("checkInTime: " + checkInTime)
             // if(checkInTime) {
             //     console.log(checkInTime);
             //     res.status(400).json({"error": "You already checked in for today"});
             // } 
-            //else {
+            // else {
             // const attendance = new Attendance({
             //     date: moment().format("YYYY-MM-DD"),
             //     user: req.user.id,
             //     checkInTime: moment().format("HH:mm:ss"),
             //     checkOutTime: "",
             //     workedHours: 0
-            // });
+            // });}
             // var previousTotalWorkedHours = await Attendance.findOne({user: req.user.id },{},{ sort: { 'checkOutTime' : -1 , 'date':-1 } });
             // console.log("previous:",previousTotalWorkedHours)
 
-            let currentDate = new Date().toISOString().slice(0, 10);
+            let currentDate = new moment().toISOString().slice(0, 10);
             var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
 
             var previousNumberOfCheckins = previousLoginInformation
@@ -288,6 +290,8 @@ router.post(
                 checkOutTime: "",
                 numberOfCheckIn: 1,
                 workedHours: 0,
+                overtime:0,
+                overtimeTwo:0,
             });
 
             if (previousNumberOfCheckins != null) {
@@ -357,11 +361,12 @@ router.post(
     async (req, res) => {
         try {
             const { deviceId } = req.body;
-            // console.log("BODY:" , req.user)
+            console.log("BODY:" , req.body)
             const user = await User.findOne({ _id: req.user.id });
             //if (deviceId == user.deviceId) {
             if (deviceId != user.deviceId) {
-
+                console.log(deviceId);
+                console.log(user.deviceId);
                 const attendance = await Attendance.findOne({
                     // date: moment().format("dddd-YYYY-MM-DD"), 
                     //date: moment().format("dddd, DD-MM-YYYY"),
@@ -372,7 +377,7 @@ router.post(
 
                 // const workedHours = await Attendance.findOne({user: req.user.id }).select("workedHours");
                 // console.log("checkworkedhours:",workedHours)
-                let currentDate = new Date().toISOString().slice(0, 10);
+                let currentDate = new moment().toISOString().slice(0, 10);
 
 
                 var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
@@ -386,9 +391,12 @@ router.post(
 
                     attendance.checkOutTime = moment().format("HH:mm:ss");
                     const day = moment().format("dddd");
-                    const date = moment().format("DD,MM,YYYY");
+                   const date = moment().format("DD,MM,YYYY");
+                    console.log(date);
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(previousWorkedHours) + totalHours[0]
+                    attendance.overtime=parseFloat(totalHours[1])
+                    attendance.overtimeTwo=parseFloat(totalHours[2])
 
                     // attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins) + 1
 
@@ -415,8 +423,9 @@ router.post(
                 // }
                 else {
                     attendance.checkOutTime = moment().format("HH:mm:ss");
-                    const day = moment().format("dddd");
+                    //const day = moment().format("dddd");
                     const date = moment().format("DD,MM,YYYY");
+                 
                     // attendance.checkInDay = moment().format("YYYY-MM-DD");
 
                     // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
@@ -433,6 +442,10 @@ router.post(
 
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(totalHours[0])
+                    attendance.overtime=parseFloat(totalHours[1])
+                    attendance.overtimeTwo=parseFloat(totalHours[2]);
+                    
+        
 
                     // console.log("after ", attendance.workedHours)
 

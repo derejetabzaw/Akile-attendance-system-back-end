@@ -19,6 +19,12 @@ const AttendanceSchema = mongoose.Schema({
     },
     workedHours: {
         type: Number
+    },
+    overtime :{
+        type:Number
+    },
+    overtimeTwo:{
+        type:Number
     }
 });
 

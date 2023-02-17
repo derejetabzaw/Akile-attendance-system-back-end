@@ -9,7 +9,7 @@ const Attendance = require('../models/Attendance');
 // @access   Private
 router.get(
     '/',
-    // verifyJWT,
+    verifyJWT,
     async (req, res) => {
         try {
             const attendances = await Attendance.find();
