@@ -40,7 +40,6 @@ const upload = multer({ storage: storage }).single('image');
 // @access   Public
 router.post(
     '/signup',
-   // verifyJWT,
     upload,
     [
         check('name', 'name is required!').not().isEmpty(),
