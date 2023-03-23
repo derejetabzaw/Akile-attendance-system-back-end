@@ -54,7 +54,7 @@ router.post(
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId, salary, telephone } = req.body;
+        const { name, lastName, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId, salary, telephone } = req.body;
         try {
             let user = await User.findOne({ name });
             if (user) {
@@ -81,6 +81,7 @@ router.post(
 
             user = new User({
                 name: name,
+                lastName: lastName,
                 deviceId: deviceId,
                 staffId: staffId,
                 image: image,
@@ -114,7 +115,7 @@ router.post(
             // };
 
             // return res.status(200).json({password: generatedPassword});
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'staffId', 'deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'lastName', 'staffId', 'deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
 
         } catch (error) {
             console.log("Error:", error.message);
@@ -151,7 +152,6 @@ router.put(
         try {
 
             let userId = req.params.id;
-            console.log(typeof (req.body.email))
             User.findOneAndUpdate({ _id: userId }, {
                 $set: {
                     'password': req.body.password,
@@ -190,7 +190,7 @@ router.delete(
 
             let userId = req.params.id;
             User.deleteOne({ staffId: userId }, (err) => {
-                if (err) { console.log("Error While Deleting")  }
+                if (err) { console.log("Error While Deleting") }
                 //console.log("Error While Deleting") }
             })
 
@@ -290,8 +290,8 @@ router.post(
                 checkOutTime: "",
                 numberOfCheckIn: 1,
                 workedHours: 0,
-                overtime:0,
-                overtimeTwo:0,
+                overtime: 0,
+                overtimeTwo: 0,
             });
 
             if (previousNumberOfCheckins != null) {
@@ -361,7 +361,7 @@ router.post(
     async (req, res) => {
         try {
             const { deviceId } = req.body;
-            console.log("BODY:" , req.body)
+            console.log("BODY:", req.body)
             const user = await User.findOne({ _id: req.user.id });
             //if (deviceId == user.deviceId) {
             if (deviceId != user.deviceId) {
@@ -391,12 +391,12 @@ router.post(
 
                     attendance.checkOutTime = moment().format("HH:mm:ss");
                     const day = moment().format("dddd");
-                   const date = moment().format("DD,MM,YYYY");
+                    const date = moment().format("DD,MM,YYYY");
                     console.log(date);
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(previousWorkedHours) + totalHours[0]
-                    attendance.overtime=parseFloat(totalHours[1])
-                    attendance.overtimeTwo=parseFloat(totalHours[2])
+                    attendance.overtime = parseFloat(totalHours[1])
+                    attendance.overtimeTwo = parseFloat(totalHours[2])
 
                     // attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins) + 1
 
@@ -442,8 +442,8 @@ router.post(
 
                     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
                     attendance.workedHours = parseFloat(totalHours[0])
-                    attendance.overtime=parseFloat(totalHours[1])
-                    attendance.overtimeTwo=parseFloat(totalHours[2]);
+                    attendance.overtime = parseFloat(totalHours[1])
+                    attendance.overtimeTwo = parseFloat(totalHours[2]);
                     
         
 

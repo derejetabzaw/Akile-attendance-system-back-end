@@ -5,6 +5,10 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    lastName: {
+        type: String,
+        required: true
+    },
     staffId: {
         type: String,
         required: true,
