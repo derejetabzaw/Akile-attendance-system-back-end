@@ -129,7 +129,7 @@ router.post(
 // @access   Private
 router.get(
     '/',
-    verifyJWT,
+    // verifyJWT,
     async (req, res) => {
         try {
             const users = await User.find();
