@@ -47,7 +47,7 @@ router.post(
         check('staffId', 'staffIf is required!').not().isEmpty(),
         check('gender', 'gender is required!').not().isEmpty(),
         check('workingSite', "workingSite is required!").not().isEmpty(),
-        check('password', "password is required!").not().isEmpty(),
+        // check('password', "password is required!").not().isEmpty(),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -76,16 +76,16 @@ router.post(
                 }
             }
 
-            const salt = await bcrypt.genSalt(10);
-            const passwords = await bcrypt.hash(password, salt);
+            // const salt = await bcrypt.genSalt(10);
+            // const passwords = await bcrypt.hash(password, salt);
 
             user = new User({
                 name: name,
                 lastName: lastName,
-                deviceId: deviceId,
+                // deviceId: deviceId,
                 staffId: staffId,
                 image: image,
-                password: passwords,
+                // password: passwords,
                 imageUrl: imageUrl,
                 isAdmin: isAdmin,
                 email: email,
@@ -108,14 +108,14 @@ router.post(
             // const salt = await bcrypt.genSalt(10);
 
             // user.password = await bcrypt.hash(password, salt);
-
+            console.log("USERRRR BACKEND:", user)
             await user.save();
             // const alertContent = {
             //     html: `<b>Hey there! </b><br> Your Credintials are Staff id: ${staffId} and password: ${generatedPassword}`,
             // };
 
             // return res.status(200).json({password: generatedPassword});
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'lastName', 'staffId', 'deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'lastName', 'staffId', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
 
         } catch (error) {
             console.log("Error:", error.message);

@@ -14,17 +14,17 @@ const UserSchema = new mongoose.Schema({
         required: true,
         // unique: true
     },
-    password: {
-        type: String,
-        required: true
-    },
+    // password: {
+    //     type: String,
+    //     required: true
+    // },
     email: {
         type: String,
         required: true
     },
-    deviceId: {
-        type: String,
-    },
+    // deviceId: {
+    //     type: String,
+    // },
     isAdmin: {
         type: Boolean,
         default: false,
