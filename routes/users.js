@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
 const _ = require('lodash');
-const generator = require('generate-password');
+// const generator = require('generate-password');
 const auth = require('../middlewares/auth');
-const path = require('path');
+// const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const moment = require('moment');
@@ -12,7 +12,7 @@ const { calculateTotalHours } = require('../utils')
 
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
-const Site = require('../models/Site');
+// const Site = require('../models/Site');
 const { check, validationResult } = require('express-validator');
 const verifyJWT = require('../middlewares/verifyJWT');
 
@@ -47,14 +47,22 @@ router.post(
         check('staffId', 'staffIf is required!').not().isEmpty(),
         check('gender', 'gender is required!').not().isEmpty(),
         check('workingSite', "workingSite is required!").not().isEmpty(),
-        check('password', "password is required!").not().isEmpty(),
+        // check('password', "password is required!").not().isEmpty(),
     ],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({ error: errors.array() });
         }
-        const { name, lastName, isAdmin, email, staffId, gender, image, password, position, workingSite, deviceId, salary, telephone } = req.body;
+        const { name, lastName, isAdmin, email, staffId, gender, image, position, workingSite, salary, telephone } = req.body;
+        
+
+
+        const password = "12345"
+        const deviceId = "12345"
+
+
+
         try {
             let user = await User.findOne({ name });
             if (user) {
@@ -96,7 +104,6 @@ router.post(
                 telephone: telephone,
             });
 
-
             // Generate a custom password for user
             // const generatedPassword = generator.generate({
             //     length: 10,
@@ -115,7 +122,7 @@ router.post(
             // };
 
             // return res.status(200).json({password: generatedPassword});
-            return res.status(200).json(_.pick(user, ['_id', 'name', 'lastName', 'staffId', 'deviceId', 'password', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
+            return res.status(200).json(_.pick(user, ['_id', 'name', 'lastName', 'staffId', 'isAdmin', 'email', 'gender', 'position', 'imageUrl', 'workingSite', 'salary', 'telephone']));
 
         } catch (error) {
             console.log("Error:", error.message);
