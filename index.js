@@ -1,5 +1,6 @@
 require('dotenv').config()
 const express = require('express')
+const functions = require("firebase-functions")
 const app = express()
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser');
@@ -47,7 +48,11 @@ app.use('/api/v1/users', usersRoute)
 app.use('/api/v1/attendance', attendanceRoute);
 app.use('/api/v1/sites', siteRoute);
 
-//Backens server 
-app.listen(PORT, () =>
+//Backend server 
+const server = require('http').createServer(app);
+
+server.listen(PORT, () =>
       console.log(`Server running on port ${PORT}`)
 )
+
+// exports.api = functions.https.onRequest(app);

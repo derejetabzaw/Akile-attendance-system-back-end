@@ -136,7 +136,7 @@ router.post(
 // @access   Private
 router.get(
     '/',
-    verifyJWT,
+    // verifyJWT,
     async (req, res) => {
         try {
             const users = await User.find();
@@ -152,7 +152,7 @@ router.get(
 // @access   Private
 router.put(
     '/update-users/:id',
-    verifyJWT,
+    // verifyJWT,
     async (req, res) => {
         console.log("ID:", req.params.id)
 
@@ -190,7 +190,7 @@ router.put(
 // @access   Private
 router.delete(
     '/delete-user/:id',
-    verifyJWT,
+    // verifyJWT,
     // auth, 
     async (req, res) => {
         try {
