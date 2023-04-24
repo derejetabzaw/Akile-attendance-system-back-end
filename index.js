@@ -1,6 +1,6 @@
 require('dotenv').config()
 const express = require('express')
-const functions = require("firebase-functions")
+// const functions = require("firebase-functions")
 const app = express()
 const mongoose = require('mongoose')
 const bodyParser = require('body-parser');
@@ -37,6 +37,7 @@ const authMobile = require('./routes/auth');
 const usersRoute = require('./routes/users')
 const attendanceRoute = require('./routes/attendance');
 const siteRoute = require('./routes/sites');
+const payrollRoute = require('./routes/payroll');
 
 //Middleware
 app.use(express.json())
@@ -47,6 +48,7 @@ app.use('/api/v1/auth', authMobile);
 app.use('/api/v1/users', usersRoute)
 app.use('/api/v1/attendance', attendanceRoute);
 app.use('/api/v1/sites', siteRoute);
+app.use('/api/v1/payroll', payrollRoute);
 
 //Backend server 
 const server = require('http').createServer(app);
