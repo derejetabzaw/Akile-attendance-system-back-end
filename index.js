@@ -11,7 +11,9 @@ app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 app.use(cors())
 
-const PORT = process.env.PORT || 8081;
+
+
+const PORT = process.env.PORT || 9000;
 
 //  Database connection
 (async () => {
@@ -32,7 +34,8 @@ const PORT = process.env.PORT || 8081;
 })()
 
 //Routes
-const authRoute = require('./routes/authSignin')
+// authSignin route removed — it used ACCESS_TOKEN_SECRET which was missing.
+// Use /api/v1/auth/login from authMobile (routes/auth.js) instead.
 const authMobile = require('./routes/auth');
 const usersRoute = require('./routes/users')
 const attendanceRoute = require('./routes/attendance');
@@ -42,11 +45,13 @@ const siteRoute = require('./routes/sites');
 app.use(express.json())
 
 //Route Middleware
-app.use('/api/v1', authRoute)
 app.use('/api/v1/auth', authMobile);
 app.use('/api/v1/users', usersRoute)
 app.use('/api/v1/attendance', attendanceRoute);
 app.use('/api/v1/sites', siteRoute);
+
+
+
 
 //Backend server 
 const server = require('http').createServer(app);

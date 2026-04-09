@@ -308,19 +308,16 @@ router.post(
             console.log("USERID:", req.user.id)
             console.log("Current numberOfCheckIn", attendance.numberOfCheckIn)
 
-            if (currentDate == attendance.date) {   // Not sure how to get todays date and device date while checkin
+            if (currentDate == attendance.date) {
                 if (attendance.numberOfCheckIn < 4) {
-
                     await attendance.save();
-                    res.status(200).json(attendance);
-                }
-                else {
+                    return res.status(200).json(attendance);
+                } else {
                     console.log("Error Checking In:", attendance.numberOfCheckIn)
-                    console.log("Number of Checkin per day exceeded 3")
+                    return res.status(400).json({ msg: "Check-in limit reached. Maximum 3 check-ins per day." });
                 }
-            }
-            else {
-                console.log("Error! Date is not equal to today.")
+            } else {
+                return res.status(400).json({ msg: "Check-in date does not match today's date." });
             }
 
             //          await attendance.save();
@@ -371,7 +368,7 @@ router.post(
             console.log("BODY:", req.body)
             const user = await User.findOne({ _id: req.user.id });
             //if (deviceId == user.deviceId) {
-            if (deviceId != user.deviceId) {
+            if (deviceId == user.deviceId) {
                 console.log(deviceId);
                 console.log(user.deviceId);
                 const attendance = await Attendance.findOne({
@@ -463,11 +460,47 @@ router.post(
                 }
 
             } else {
-                res.status(400).json({ "error": "You can only check-out with your registered device" });
+                return res.status(400).json({ error: "You can only check-out with your registered device" });
             }
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured" });
+        }
+    }
+);
+
+// @route    POST api/users/change-password
+// @desc     Change user password
+// @access   Private (requires JWT)
+router.post(
+    '/change-password',
+    verifyJWT,
+    async (req, res) => {
+        try {
+            const { oldPassword, newPassword } = req.body;
+
+            if (!oldPassword || !newPassword) {
+                return res.status(400).json({ error: 'Old password and new password are required.' });
+            }
+
+            const user = await User.findById(req.user.id);
+            if (!user) {
+                return res.status(404).json({ error: 'User not found.' });
+            }
+
+            const isMatch = await bcrypt.compare(oldPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ error: 'Old password is incorrect.' });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(newPassword, salt);
+            await user.save();
+
+            return res.status(200).json({ msg: 'Password changed successfully.' });
+        } catch (error) {
+            console.log(error.message);
+            return res.status(500).json({ error: 'Internal server error.' });
         }
     }
 );

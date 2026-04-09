@@ -65,28 +65,37 @@ router.post(
 router.put('/update-sites/:id',
     verifyJWT,
     async (req, res) => {
-        console.log(req.body)
-        Site.updateOne({ _id: req.params.id }, { $set: req.body }, (err, response) => {
-            if (err) {
-                console.log(err);
-                console.log(req.params.id)
-                response.json({ message: "operation failed" })
+        try {
+            const updated = await Site.findByIdAndUpdate(
+                req.params.id,
+                { $set: req.body },
+                { new: true }
+            );
+            if (!updated) {
+                return res.status(404).json({ msg: 'Site not found' });
             }
-
-        })
-
-
+            return res.status(200).json({ msg: 'Site updated successfully', site: updated });
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ msg: 'Server error occurred' });
+        }
     });
 
 //needs validations
 
 router.delete('/delete-sites/:id',
     verifyJWT,
-    (req, res) => {
-        console.log(req.params)
-        Site.deleteOne({ _id: req.params.id }, (err) => {
-            console.log("record deleted")
-            if (err) { res.json({ message: "Error Occured cannot complete that operation" }) }
-        })
+    async (req, res) => {
+        try {
+            const deleted = await Site.findByIdAndDelete(req.params.id);
+            if (!deleted) {
+                return res.status(404).json({ msg: 'Site not found' });
+            }
+            console.log('Site deleted:', req.params.id);
+            return res.status(200).json({ msg: 'Site deleted successfully' });
+        } catch (err) {
+            console.log(err);
+            return res.status(500).json({ msg: 'Server error occurred' });
+        }
     })
 module.exports = router;
