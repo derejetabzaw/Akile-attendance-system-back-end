@@ -102,5 +102,47 @@ router.put(
     }
 );
 
+// @route    GET /api/v1/attendance/status/:userId
+// @desc     Return current attendance status for a specific user
+// @access   Private
+router.get(
+    '/status/:userId',
+    verifyJWT,
+    async (req, res) => {
+        try {
+            const moment = require('moment');
+            const today = moment().format("YYYY-MM-DD");
+            
+            // Find the latest record for today
+            const lastRecord = await Attendance.findOne(
+                { user: req.params.userId, date: today },
+                {},
+                { sort: { 'checkInTime': -1 } }
+            );
+
+            if (!lastRecord) {
+                return res.status(200).json({ status: "checkedOut", recordCount: 0 });
+            }
+
+            if (!lastRecord.checkOutTime || lastRecord.checkOutTime === "") {
+                return res.status(200).json({ 
+                    status: "checkedIn", 
+                    checkInTime: lastRecord.checkInTime,
+                    recordCount: await Attendance.countDocuments({ user: req.params.userId, date: today })
+                });
+            } else {
+                return res.status(200).json({ 
+                    status: "checkedOut", 
+                    checkOutTime: lastRecord.checkOutTime,
+                    recordCount: await Attendance.countDocuments({ user: req.params.userId, date: today })
+                });
+            }
+        } catch (error) {
+            console.log("Server error occured", error);
+            return res.status(500).json({ msg: "Server Error occured" });
+        }
+    }
+);
+
 module.exports = router;
 

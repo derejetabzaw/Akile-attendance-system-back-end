@@ -15,6 +15,7 @@ const Attendance = require('../models/Attendance');
 // const Site = require('../models/Site');
 const { check, validationResult } = require('express-validator');
 const verifyJWT = require('../middlewares/verifyJWT');
+const { send: sendEmail } = require('../emailAlert/email/email');
 
 
 const MIME_TYPES = {
@@ -55,7 +56,7 @@ router.post(
             return res.status(400).json({ error: errors.array() });
         }
         const { name, lastName, isAdmin, email, staffId, gender, image, position, workingSite, salary, telephone } = req.body;
-        
+
 
 
         const password = "12345"
@@ -102,6 +103,8 @@ router.post(
                 workingSite: workingSite,
                 salary: salary,
                 telephone: telephone,
+                isApproved: true,        // Admin-created users are pre-approved
+                registeredViaApp: false,
             });
 
             // Generate a custom password for user
@@ -131,6 +134,98 @@ router.post(
     }
 );
 
+// @route    GET api/users/pending
+// @desc     Return all users pending approval (registered via app, not yet approved)
+// @access   Private (admin)
+router.get(
+    '/pending',
+    async (req, res) => {
+        try {
+            const pending = await User.find({ registeredViaApp: true, isApproved: false })
+                .select('-password');
+            return res.status(200).json({ users: pending });
+        } catch (error) {
+            console.error('Error fetching pending users:', error.message);
+            return res.status(500).json({ msg: 'Server Error' });
+        }
+    }
+);
+
+// @route    PUT api/users/approve/:id
+// @desc     Approve a pending app-registered user, set salary & position
+// @access   Private (admin)
+router.put(
+    '/approve/:id',
+    async (req, res) => {
+        try {
+            const { salary, position, workingSite, password } = req.body;
+
+            if (!salary || !position) {
+                return res.status(400).json({ error: 'Salary and position are required for approval.' });
+            }
+
+            const bcryptSalt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password || '12345', bcryptSalt);
+
+            const user = await User.findByIdAndUpdate(
+                req.params.id,
+                {
+                    $set: {
+                        isApproved: true,
+                        salary: salary,
+                        position: position,
+                        workingSite: workingSite || '',
+                        password: hashedPassword,
+                    }
+                },
+                { new: true }
+            ).select('-password');
+
+            if (!user) {
+                return res.status(404).json({ error: 'User not found.' });
+            }
+
+            // Send notification email to the approved user
+            const emailContent = {
+                text: `Welcome to Akile! Your account has been approved. Your Staff ID for logging in is: ${user.staffId}`,
+                html: `
+                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: 20px auto; border: 1px solid #eeeeee; border-radius: 12px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                        <div style="text-align: center; margin-bottom: 25px;">
+                            <h1 style="color: #4f100a; margin: 0;">Akile Attendance</h1>
+                            <p style="color: #666; font-size: 14px;">Personnel Activation Notice</p>
+                        </div>
+                        <p style="font-size: 16px; color: #333;">Hello <strong>${user.name}</strong>,</p>
+                        <p style="color: #555; line-height: 1.6;">Your registration has been successfully reviewed and approved by the administrator.</p>
+                        <div style="background-color: #fcf8f8; border: 1px solid #f2e2e2; border-radius: 8px; padding: 20px; text-align: center; margin: 25px 0;">
+                            <p style="margin: 0 0 10px 0; color: #777; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Use this Staff ID to Login:</p>
+                            <span style="font-size: 28px; font-weight: bold; color: #4f100a; letter-spacing: 3px;">${user.staffId}</span>
+                        </div>
+                        <p style="color: #555; line-height: 1.6;">Please use your Staff ID and the password you created during signup to access the mobile application.</p>
+                        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eeeeee; font-size: 12px; color: #999; text-align: center;">
+                            <p>If you didn't request this or believe this was a mistake, please contact HR.</p>
+                        </div>
+                    </div>
+                `
+            };
+
+            try {
+                await sendEmail(user.email, emailContent, 'Akile Account Activation');
+            } catch (emailErr) {
+                console.error("Failed to send approval email:", emailErr.message);
+                // We still 200 because the user IS approved in DB
+            }
+
+            return res.status(200).json({
+                msg: 'User approved successfully and notification sent.',
+                user,
+            });
+        } catch (error) {
+            console.error('Approve error:', error.message);
+            return res.status(500).json({ error: 'Server error during approval.' });
+        }
+    }
+);
+
 // @route    GET api/users
 // @desc     Return all Registered users
 // @access   Private
@@ -142,8 +237,8 @@ router.get(
             const users = await User.find();
             return res.status(200).json({ users });
         } catch (error) {
-            console.log("Server error occured");
-            return res.status(500).json({ msg: "Server Error occured" });
+            console.log('Server error occured');
+            return res.status(500).json({ msg: 'Server Error occured' });
         }
     }
 );
@@ -267,58 +362,40 @@ router.post(
             // console.log(req.user.id);
             // console.log(user);    
 
-            //check if user already checkes in before
-            const checkInTime = await Attendance.findOne({ date: moment().format("YYYY-MM-DD"), user: req.user.id }).select("checkInTime");
-            console.log("checkInTime: " + checkInTime)
-            // if(checkInTime) {
-            //     console.log(checkInTime);
-            //     res.status(400).json({"error": "You already checked in for today"});
-            // } 
-            // else {
-            // const attendance = new Attendance({
-            //     date: moment().format("YYYY-MM-DD"),
-            //     user: req.user.id,
-            //     checkInTime: moment().format("HH:mm:ss"),
-            //     checkOutTime: "",
-            //     workedHours: 0
-            // });}
-            // var previousTotalWorkedHours = await Attendance.findOne({user: req.user.id },{},{ sort: { 'checkOutTime' : -1 , 'date':-1 } });
-            // console.log("previous:",previousTotalWorkedHours)
+            // Check if user is already checked in for today
+            const lastRecord = await Attendance.findOne(
+                { user: req.user.id, date: moment().format("YYYY-MM-DD") },
+                {},
+                { sort: { 'checkInTime': -1 } }
+            );
 
-            let currentDate = new moment().toISOString().slice(0, 10);
-            var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
+            if (lastRecord && (!lastRecord.checkOutTime || lastRecord.checkOutTime === "")) {
+                return res.status(400).json({ msg: "You are already checked in. Please check out first." });
+            }
 
-            var previousNumberOfCheckins = previousLoginInformation
+            // Check check-in limit (3 per day)
+            const countToday = await Attendance.countDocuments({
+                user: req.user.id,
+                date: moment().format("YYYY-MM-DD")
+            });
+
+            if (countToday >= 3) {
+                return res.status(400).json({ msg: "Check-in limit reached. Maximum 3 check-ins per day." });
+            }
 
             const attendance = new Attendance({
                 date: moment().format("YYYY-MM-DD"),
                 user: req.user.id,
                 checkInTime: moment().format("HH:mm:ss"),
                 checkOutTime: "",
-                numberOfCheckIn: 1,
+                numberOfCheckIn: countToday + 1,
                 workedHours: 0,
                 overtime: 0,
                 overtimeTwo: 0,
             });
 
-            if (previousNumberOfCheckins != null) {
-                attendance.numberOfCheckIn = previousNumberOfCheckins.numberOfCheckIn + 1;
-            }
-
-            console.log("USERID:", req.user.id)
-            console.log("Current numberOfCheckIn", attendance.numberOfCheckIn)
-
-            if (currentDate == attendance.date) {
-                if (attendance.numberOfCheckIn < 4) {
-                    await attendance.save();
-                    return res.status(200).json(attendance);
-                } else {
-                    console.log("Error Checking In:", attendance.numberOfCheckIn)
-                    return res.status(400).json({ msg: "Check-in limit reached. Maximum 3 check-ins per day." });
-                }
-            } else {
-                return res.status(400).json({ msg: "Check-in date does not match today's date." });
-            }
+            await attendance.save();
+            return res.status(200).json(attendance);
 
             //          await attendance.save();
             //            console.log("posted-attendance-information",attendance);
@@ -372,92 +449,32 @@ router.post(
                 console.log(deviceId);
                 console.log(user.deviceId);
                 const attendance = await Attendance.findOne({
-                    // date: moment().format("dddd-YYYY-MM-DD"), 
-                    //date: moment().format("dddd, DD-MM-YYYY"),
                     date: moment().format("YYYY-MM-DD"),
                     user: req.user.id
                 }, {}, { sort: { 'checkInTime': -1 } });
 
-
-                // const workedHours = await Attendance.findOne({user: req.user.id }).select("workedHours");
-                // console.log("checkworkedhours:",workedHours)
-                let currentDate = new moment().toISOString().slice(0, 10);
-
-
-                var previousLoginInformation = await Attendance.findOne({ user: req.user.id, date: currentDate }, {}, { sort: { 'checkOutTime': -1, 'checkInTime': -1, 'date': 'desc' } });
-
-                console.log("previousLoginInformation", previousLoginInformation)
-
-                if (previousLoginInformation.date === currentDate && previousLoginInformation.checkOutTime !== null) {
-                    var previousWorkedHours = previousLoginInformation.workedHours
-
-                    //                    var previousNumberOfCheckins = previousLoginInformation.numberOfCheckIn
-
-                    attendance.checkOutTime = moment().format("HH:mm:ss");
-                    const day = moment().format("dddd");
-                    const date = moment().format("DD,MM,YYYY");
-                    console.log(date);
-                    const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
-                    attendance.workedHours = parseFloat(previousWorkedHours) + totalHours[0]
-                    attendance.overtime = parseFloat(totalHours[1])
-                    attendance.overtimeTwo = parseFloat(totalHours[2])
-
-                    // attendance.numberOfCheckIn = parseFloat(previousNumberOfCheckins) + 1
-
-                    await attendance.save();
-                    await user.save();
-                    console.log("attendanceHASPREVIOUS: ", attendance)
-                    res.status(200).json(attendance);
-
+                if (!attendance || (attendance.checkOutTime && attendance.checkOutTime !== "")) {
+                    return res.status(400).json({ msg: "You must check in before checking out!" });
                 }
 
-                // if(attendance && attendance.checkOutTime == "") {
-                // add user checkout time
-                //     attendance.checkOutTime = moment().format("HH:mm:ss");
-                //     await attendance.save();
-                //     const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime);
-                //     user.workedHours = totalHours
-                //     await user.save();
-                //     res.status(200).json(attendance);
-                // }else if (attendance && !(attendance.checkOutTime == "")){
-                //     return res.status(400).json({ msg: "You've checked-out already for today!"});
-                // }
-                // else {
-                //     return res.status(400).json({ msg: "You've to check-in before checking-out!"});
-                // }
-                else {
-                    attendance.checkOutTime = moment().format("HH:mm:ss");
-                    //const day = moment().format("dddd");
-                    const date = moment().format("DD,MM,YYYY");
+                attendance.checkOutTime = moment().format("HH:mm:ss");
+                const day = moment().format("dddd");
+                const date = moment().format("DD,MM,YYYY");
+                
+                const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
+                
+                // If there was a previous record today, we should probably add to it? 
+                // Or just keep individual records? The previous code was trying to sum them up.
+                // Let's keep it simple and just update this record.
+                
+                attendance.workedHours = parseFloat(totalHours[0]);
+                attendance.overtime = parseFloat(totalHours[1]);
+                attendance.overtimeTwo = parseFloat(totalHours[2]);
 
-                    // attendance.checkInDay = moment().format("YYYY-MM-DD");
-
-                    // Attendance.findOne({}, {}, { sort: { 'created_at' : -1 } }, function(err, post) {
-                    //     console.log( "Here" );
-                    //   });
-
-                    // console.log("attendance.checkInDay: ",attendance.checkInDay)
-                    // const get_day = moment().format("dddd");
-
-                    // console.log("attendance.checkInTime: ",attendance.checkInTime)
-                    // console.log("attendance.checkOutTime: ",attendance.checkOutTime)
-                    // console.log("attendance.checkin_Date:" , attendance.date)
-                    // console.log("previous ", attendance.workedHours)
-
-                    const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
-                    attendance.workedHours = parseFloat(totalHours[0])
-                    attendance.overtime = parseFloat(totalHours[1])
-                    attendance.overtimeTwo = parseFloat(totalHours[2]);
-
-
-
-                    // console.log("after ", attendance.workedHours)
-
-                    await attendance.save();
-                    await user.save();
-                    console.log("attendance: ", attendance)
-                    res.status(200).json(attendance);
-                }
+                await attendance.save();
+                await user.save();
+                console.log("attendance updated: ", attendance)
+                res.status(200).json(attendance);
 
             } else {
                 return res.status(400).json({ error: "You can only check-out with your registered device" });

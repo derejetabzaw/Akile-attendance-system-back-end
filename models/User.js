@@ -52,6 +52,17 @@ const UserSchema = new mongoose.Schema({
     },
     telephone: {
         type: String,
+    },
+    age: {
+        type: Number,
+    },
+    registeredViaApp: {
+        type: Boolean,
+        default: false,
+    },
+    isApproved: {
+        type: Boolean,
+        default: false,
     }
 });
 

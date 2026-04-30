@@ -15,7 +15,7 @@ module.exports = function (req, res, next) {
             process.env.JWT_SECRET,
             (error, decoded) => {
                 if (error) {
-                    return res.status(401).json({ msg: 'Invalid token' });
+                    return res.status(401).json({ msg: 'Invalids token' });
                 } else {
                     req.user = decoded.user;
                     next();
