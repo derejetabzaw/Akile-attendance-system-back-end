@@ -65,6 +65,7 @@ router.post(
                                     .json({
                                           accessToken: token,
                                           staffId: user.staffId,
+                                          userId: user._id,
                                     });
                         }
                   );

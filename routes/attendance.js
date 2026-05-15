@@ -3,6 +3,8 @@ const router = express.Router();
 const verifyJWT = require('../middlewares/verifyJWT');
 
 const Attendance = require('../models/Attendance');
+const { calculateOvertime } = require('../utilities/attendanceUtils');
+const moment = require('moment');
 
 // @route    GET /api/v1/attendance
 // @desc     Return all attendance records
@@ -12,8 +14,53 @@ router.get(
     verifyJWT,
     async (req, res) => {
         try {
-            const attendances = await Attendance.find().sort({ date: -1 });
-            return res.status(200).json({ attendances });
+            const attendances = await Attendance.find().sort({ date: -1 }).lean();
+            
+            // Group records by user AND date to calculate cumulative daily overtime
+            const groups = {};
+            attendances.forEach(a => {
+                const key = `${a.user}_${a.date}`;
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(a);
+            });
+
+            const enrichedAttendances = [];
+
+            // Process each user-day group
+            Object.keys(groups).forEach(key => {
+                const dayRecords = groups[key].sort((a, b) => 
+                    (a.checkInTime || '').localeCompare(b.checkInTime || ''));
+                
+                let dailyPrevHours = 0;
+                dayRecords.forEach(a => {
+                    let totalInSession = (a.workedHours || 0) + (a.overtime || 0) + (a.overtimeTwo || 0);
+                    
+                    // Handle active sessions (no checkout)
+                    if ((!a.checkOutTime || a.checkOutTime === "") && a.checkInTime && a.date && moment(a.date, ["YYYY-MM-DD", "dddd, DD-MM-YYYY", "DD,MM,YYYY"]).isSame(moment(), 'day')) {
+                        const checkIn = moment(a.checkInTime, "HH:mm:ss");
+                        const now = moment();
+                        let sessionHours = now.diff(checkIn, 'hours', true);
+                        if (sessionHours < 0) sessionHours = 0;
+                        totalInSession = sessionHours;
+                    }
+
+                    // Re-calculate OT based on cumulative hours for the day
+                    const otData = calculateOvertime(totalInSession, a.date, dailyPrevHours);
+                    
+                    // Update fields for display (even if not saved to DB yet)
+                    a.overtime = otData.ot1;
+                    a.overtimeTwo = otData.ot2;
+                    a.workedHours = otData.workHours;
+                    
+                    enrichedAttendances.push(a);
+                    dailyPrevHours += totalInSession;
+                });
+            });
+
+            // Sort back by date descending for the list view
+            enrichedAttendances.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            return res.status(200).json({ attendances: enrichedAttendances });
         } catch (error) {
             console.log("Server error occured");
             return res.status(500).json({ msg: "Server Error occured" });
@@ -50,29 +97,90 @@ router.get(
     verifyJWT,
     async (req, res) => {
         try {
-            const { month } = req.query; // optional ?month=YYYY-MM
+            const moment = require('moment');
+            const now = moment();
+            const currentMonth = now.format("YYYY-MM");
+            const today = now.format("YYYY-MM-DD");
+            
+            const monthToQuery = req.query.month || currentMonth;
+            
+            console.log(`[SUMMARY] User: ${req.params.userId}, Month: ${monthToQuery}, Now: ${now.format("HH:mm:ss")}`);
+
             let query = { user: req.params.userId };
+            if (monthToQuery !== 'all') {
+                query.date = { $regex: new RegExp(`^${monthToQuery}`) };
+            }
 
-            const records = await Attendance.find(query);
+            const records = await Attendance.find(query).lean();
+            console.log(`[SUMMARY] Found ${records.length} records for user ${req.params.userId}`);
 
-            const filtered = month
-                ? records.filter(r => r.date && r.date.startsWith(month))
-                : records;
+            // We'll group records by date to correctly calculate daily overtime
+            const recordsByDate = {};
+            records.forEach(r => {
+                const d = r.date;
+                if (!recordsByDate[d]) recordsByDate[d] = [];
+                recordsByDate[d].push(r);
+            });
 
-            const totalWorkedHours = filtered.reduce((sum, r) => sum + (r.workedHours || 0), 0);
-            const totalOT1 = filtered.reduce((sum, r) => sum + (r.overtime || 0), 0);
-            const totalOT2 = filtered.reduce((sum, r) => sum + (r.overtimeTwo || 0), 0);
+            let totalWorkHours = 0;
+            let todayWorkHours = 0;
+            let totalOT1 = 0;
+            let totalOT2 = 0;
+
+            // Process each day's records
+            Object.keys(recordsByDate).forEach(dateStr => {
+                let dailyPrevHours = 0;
+                // Sort records of the same day by check-in time to calculate OT sequentially
+                const dayRecords = recordsByDate[dateStr].sort((a, b) => 
+                    (a.checkInTime || '').localeCompare(b.checkInTime || ''));
+
+                dayRecords.forEach(r => {
+                    const sessionTotal = (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0);
+                    const otData = calculateOvertime(sessionTotal, dateStr, dailyPrevHours);
+                    
+                    totalWorkHours += otData.workHours;
+                    totalOT1 += otData.ot1;
+                    totalOT2 += otData.ot2;
+                    
+                    if (dateStr === today) {
+                        todayWorkHours += otData.workHours;
+                    }
+                    
+                    dailyPrevHours += sessionTotal;
+                });
+            });
+
+            // Add ongoing session hours if still checked in today
+            const activeRecord = records.find(r => r.date === today && (!r.checkOutTime || r.checkOutTime === ""));
+            if (activeRecord) {
+                const checkIn = moment(activeRecord.checkInTime, "HH:mm:ss");
+                let sessionHours = now.diff(checkIn, 'hours', true);
+                if (sessionHours < 0) sessionHours = 0;
+
+                // Calculate accumulated hours TODAY BEFORE this active session
+                const previousHours = records
+                    .filter(r => r.date === today && r._id.toString() !== activeRecord._id.toString())
+                    .reduce((sum, r) => sum + (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0), 0);
+
+                const activeOT = calculateOvertime(sessionHours, today, previousHours);
+
+                totalWorkHours += activeOT.workHours;
+                todayWorkHours += activeOT.workHours;
+                totalOT1 += activeOT.ot1;
+                totalOT2 += activeOT.ot2;
+            }
 
             return res.status(200).json({
                 userId: req.params.userId,
-                month: month || 'all-time',
-                totalWorkedHours: parseFloat(totalWorkedHours.toFixed(2)),
+                month: monthToQuery,
+                totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
+                todayWorkHours: parseFloat(todayWorkHours.toFixed(2)),
                 totalOT1: parseFloat(totalOT1.toFixed(2)),
                 totalOT2: parseFloat(totalOT2.toFixed(2)),
-                recordCount: filtered.length
+                recordCount: records.length
             });
         } catch (error) {
-            console.log("Server error occured");
+            console.log("Server error occured", error);
             return res.status(500).json({ msg: "Server Error occured" });
         }
     }
@@ -102,6 +210,30 @@ router.put(
     }
 );
 
+// @route    POST /api/v1/attendance/approve-month
+// @desc     Approve all records for a month (admin)
+// @access   Private
+router.post(
+    '/approve-month',
+    verifyJWT,
+    async (req, res) => {
+        try {
+            const { month, userId } = req.body; // month: "YYYY-MM"
+            if (!month) return res.status(400).json({ msg: "Month is required" });
+
+            let query = { monthIdentifier: month };
+            if (userId) query.user = userId;
+
+            await Attendance.updateMany(query, { $set: { isApproved: true } });
+
+            return res.status(200).json({ msg: `Records for ${month} approved successfully.` });
+        } catch (error) {
+            console.log("Server error occured", error);
+            return res.status(500).json({ msg: "Server Error occured" });
+        }
+    }
+);
+
 // @route    GET /api/v1/attendance/status/:userId
 // @desc     Return current attendance status for a specific user
 // @access   Private
@@ -113,16 +245,26 @@ router.get(
             const moment = require('moment');
             const today = moment().format("YYYY-MM-DD");
             
+            // Prioritize the ID from the authenticated token
+            const userId = (req.user && req.user.user && req.user.user.id) 
+                ? req.user.user.id 
+                : req.params.userId;
+
+            console.log(`[DEBUG] Checking status for User: ${userId}, Date: ${today}`);
+            
             // Find the latest record for today
             const lastRecord = await Attendance.findOne(
-                { user: req.params.userId, date: today },
+                { user: userId, date: today },
                 {},
                 { sort: { 'checkInTime': -1 } }
             );
 
             if (!lastRecord) {
+                console.log(`[DEBUG] No record found for ${userId} on ${today}`);
                 return res.status(200).json({ status: "checkedOut", recordCount: 0 });
             }
+
+            console.log(`[DEBUG] Found record: In=${lastRecord.checkInTime}, Out=${lastRecord.checkOutTime}`);
 
             if (!lastRecord.checkOutTime || lastRecord.checkOutTime === "") {
                 return res.status(200).json({ 

@@ -25,6 +25,14 @@ const AttendanceSchema = mongoose.Schema({
     },
     overtimeTwo:{
         type:Number
+    },
+    isApproved: {
+        type: Boolean,
+        default: false
+    },
+    monthIdentifier: {
+        type: String, // "YYYY-MM"
+        index: true
     }
 });
 

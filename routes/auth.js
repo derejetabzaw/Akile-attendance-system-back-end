@@ -163,6 +163,7 @@ router.post(
                     return res.status(200).json({
                         accessToken: token,
                         staffId: user.staffId,
+                        userId: user._id,
                         image: user.imageUrl
                     });
                 }

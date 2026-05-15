@@ -9,9 +9,11 @@ const fs = require('fs');
 const multer = require('multer');
 const moment = require('moment');
 const { calculateTotalHours } = require('../utils')
+const { calculateOvertime } = require('../utilities/attendanceUtils');
 
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const Notification = require('../models/Notification');
 // const Site = require('../models/Site');
 const { check, validationResult } = require('express-validator');
 const verifyJWT = require('../middlewares/verifyJWT');
@@ -234,7 +236,7 @@ router.get(
     // verifyJWT,
     async (req, res) => {
         try {
-            const users = await User.find();
+            const users = await User.find().lean();
             return res.status(200).json({ users });
         } catch (error) {
             console.log('Server error occured');
@@ -250,29 +252,45 @@ router.put(
     // verifyJWT,
     async (req, res) => {
         console.log("ID:", req.params.id)
-
         try {
-
             let userId = req.params.id;
-            User.findOneAndUpdate({ _id: userId }, {
-                $set: {
-                    'password': req.body.password,
-                    'email': req.body.email,
-                    'isAdmin': req.body.isAdmin,
-                    'deviceId': req.body.deviceId,
-                    'position': req.body.position,
-                    'workingSite': req.body.workingSite,
-                    'salary': req.body.salary,
-                    'telephone': req.body.telephone,
-                    'deviceId': req.body.deviceId
+
+            // Fetch current user so we can detect a salary change
+            const existingUser = await User.findById(userId);
+            const salaryChanged = existingUser && req.body.salary &&
+                String(existingUser.salary) !== String(req.body.salary);
+
+            const updatedUser = await User.findOneAndUpdate(
+                { _id: userId },
+                {
+                    $set: {
+                        'email':       req.body.email,
+                        'isAdmin':     req.body.isAdmin,
+                        'deviceId':    req.body.deviceId,
+                        'position':    req.body.position,
+                        'workingSite': req.body.workingSite,
+                        'salary':      req.body.salary,
+                        'telephone':   req.body.telephone,
+                    }
+                },
+                { new: true }
+            );
+
+            // Fire payroll notification if salary changed
+            if (salaryChanged && updatedUser) {
+                try {
+                    await Notification.create({
+                        userId:  updatedUser._id,
+                        type:    'payroll_update',
+                        title:   'Payroll Updated',
+                        message: `Your basic salary has been updated to ${req.body.salary}`,
+                        detail:  `Updated by admin on ${new Date().toLocaleDateString()}`,
+                    });
+                } catch (notifErr) {
+                    console.error('Failed to create payroll notification:', notifErr.message);
                 }
-            }, { new: true }, (err, response) => {
-                if (err) {
-                    console.log(err);
-                    console.log(req.params.id)
-                    response.json({ message: "operation failed" })
-                }
-            })
+            }
+
             return res.status(200).json({ msg: "User Updated Successfully" });
         } catch (error) {
             console.log("Server error occured");
@@ -458,18 +476,33 @@ router.post(
                 }
 
                 attendance.checkOutTime = moment().format("HH:mm:ss");
-                const day = moment().format("dddd");
-                const date = moment().format("DD,MM,YYYY");
+                const checkIn = moment(attendance.checkInTime, "HH:mm:ss");
+                const checkOut = moment(attendance.checkOutTime, "HH:mm:ss");
                 
-                const totalHours = calculateTotalHours(attendance.checkInTime, attendance.checkOutTime, day, date);
+                // Use the duration between check-in and check-out
+                let sessionHours = checkOut.diff(checkIn, 'hours', true);
                 
-                // If there was a previous record today, we should probably add to it? 
-                // Or just keep individual records? The previous code was trying to sum them up.
-                // Let's keep it simple and just update this record.
+                // Handle cases where checkout might be after midnight (if date is same)
+                if (sessionHours < 0) {
+                    sessionHours += 24;
+                }
+
+                // Find other records today to calculate accumulated hours
+                const otherRecords = await Attendance.find({
+                    user: req.user.id,
+                    date: attendance.date,
+                    _id: { $ne: attendance._id }
+                });
+
+                const previousHours = otherRecords.reduce((sum, r) => 
+                    sum + (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0), 0);
                 
-                attendance.workedHours = parseFloat(totalHours[0]);
-                attendance.overtime = parseFloat(totalHours[1]);
-                attendance.overtimeTwo = parseFloat(totalHours[2]);
+                const otData = calculateOvertime(sessionHours, attendance.date, previousHours);
+                
+                attendance.workedHours = otData.workHours;
+                attendance.overtime = otData.ot1;
+                attendance.overtimeTwo = otData.ot2;
+                attendance.monthIdentifier = moment(attendance.date).format("YYYY-MM");
 
                 await attendance.save();
                 await user.save();

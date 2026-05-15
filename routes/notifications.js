@@ -5,6 +5,7 @@ const verifyJWT = require('../middlewares/verifyJWT');
 
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
+const Assignment = require('../models/Assignment');
 
 // @route    GET /api/v1/notifications
 // @desc     Return dynamic notifications derived from real system events
@@ -98,6 +99,28 @@ router.get(
             const totalEmployees = await User.countDocuments({ isApproved: true });
             const totalPending = pendingUsers.length;
             const todayAttendanceCount = await Attendance.countDocuments({ date: today });
+
+            // 4. Recently created assignments (last 24 hours)
+            const oneDayAgo = moment().subtract(24, 'hours').toDate();
+            const recentAssignments = await Assignment.find({ createdAt: { $gte: oneDayAgo } })
+                .populate('employeeId', 'name lastName staffId')
+                .sort({ createdAt: -1 })
+                .limit(10);
+
+            recentAssignments.forEach(assign => {
+                if (assign.employeeId) {
+                    notifications.push({
+                        id: 'assign_' + assign._id,
+                        type: 'new_assignment',
+                        icon: 'cil-task',
+                        color: 'primary',
+                        message: `Assignment dispatched to ${assign.employeeId.name} ${assign.employeeId.lastName || ''}`,
+                        detail: assign.title,
+                        timestamp: assign.createdAt,
+                        actionUrl: '/assignments',
+                    });
+                }
+            });
 
             // Sort all notifications by timestamp (most recent first)
             notifications.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
