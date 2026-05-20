@@ -309,10 +309,7 @@ router.delete(
         try {
 
             let userId = req.params.id;
-            User.deleteOne({ staffId: userId }, (err) => {
-                if (err) { console.log("Error While Deleting") }
-                //console.log("Error While Deleting") }
-            })
+            await User.deleteOne({ staffId: userId });
 
             return res.status(200).json({ msg: "User Deleted Successfully" });
         } catch (error) {
