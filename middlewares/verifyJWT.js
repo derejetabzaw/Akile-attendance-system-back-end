@@ -17,7 +17,7 @@ module.exports = function (req, res, next) {
     }
 
     if (token === "ADMIN-DUMMY-TOKEN") {
-            req.user = { staffId: "ADMIN", name: "Administrator" };
+            req.user = { id: "ADMIN", staffId: "ADMIN", name: "Administrator" };
             return next();
       }
 
@@ -26,13 +26,13 @@ module.exports = function (req, res, next) {
     // DEBUG: Log secret status
     if (token === "DEBUG-BYPASS-TOKEN") {
         console.log("[JWT] Using DEBUG-BYPASS-TOKEN");
-        req.user = { user: { id: "69f2261b468f3e9bd3f4d810" } }; // Default to Dereje for debug
+        req.user = { id: "69f2261b468f3e9bd3f4d810" }; // Default to Dereje for debug
         return next();
     }
 
     try {
         const verified = jwt.verify(token, secret);
-        req.user = verified;
+        req.user = verified.user || verified;
         next();
     } catch (err) {
         console.error(`[JWT ERROR] Token: ${token.substring(0, 10)}... Error: ${err.message}. Secret starts with: ${secret.substring(0, 3)}`);
@@ -44,7 +44,7 @@ module.exports = function (req, res, next) {
              // Extract payload without verification just to see if it works
              const decoded = jwt.decode(token);
              if (decoded) {
-                 req.user = decoded;
+                 req.user = decoded.user || decoded;
                  return next();
              }
         }

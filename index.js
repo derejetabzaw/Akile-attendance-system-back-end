@@ -43,6 +43,9 @@ const siteRoute = require('./routes/sites');
 const notificationsRoute = require('./routes/notifications');
 const assignmentsRoute = require('./routes/assignments');
 const payrollRoute = require('./routes/payroll');
+const leaveRoute = require('./routes/leave');
+const allowanceRoute = require('./routes/allowance');
+const settingsRoute = require('./routes/settings');
 
 //Middleware
 app.use(express.json())
@@ -55,6 +58,9 @@ app.use('/api/v1/sites', siteRoute);
 app.use('/api/v1/notifications', notificationsRoute);
 app.use('/api/v1/assignments', assignmentsRoute);
 app.use('/api/v1/payroll', payrollRoute);
+app.use('/api/v1/leave', leaveRoute);
+app.use('/api/v1/allowance', allowanceRoute);
+app.use('/api/v1/settings', settingsRoute);
 
 
 

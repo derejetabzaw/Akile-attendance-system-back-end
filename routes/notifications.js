@@ -6,6 +6,7 @@ const verifyJWT = require('../middlewares/verifyJWT');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const Assignment = require('../models/Assignment');
+const Leave = require('../models/Leave');
 
 // @route    GET /api/v1/notifications
 // @desc     Return dynamic notifications derived from real system events
@@ -118,6 +119,27 @@ router.get(
                         detail: assign.title,
                         timestamp: assign.createdAt,
                         actionUrl: '/assignments',
+                    });
+                }
+            });
+
+            // 5. Recent pending leave requests
+            const recentPendingLeaves = await Leave.find({ status: 'pending' })
+                .populate('user', 'name lastName')
+                .sort({ createdAt: -1 })
+                .limit(5);
+
+            recentPendingLeaves.forEach(leave => {
+                if (leave.user) {
+                    notifications.push({
+                        id: 'leave_' + leave._id,
+                        type: 'pending_approval',
+                        icon: 'cil-calendar-check',
+                        color: 'warning',
+                        message: `${leave.user.name} ${leave.user.lastName || ''} requested leave`,
+                        detail: `For ${leave.numberOfDays} days`,
+                        timestamp: leave.createdAt,
+                        actionUrl: '/leave'
                     });
                 }
             });
