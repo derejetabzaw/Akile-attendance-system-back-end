@@ -35,6 +35,17 @@ router.get(
                 dayRecords.forEach(a => {
                     let totalInSession = (a.workedHours || 0) + (a.overtime || 0) + (a.overtimeTwo || 0);
                     
+                    // Fallback: If totalInSession is 0 but we have both check-in and check-out times, calculate from timestamps
+                    if (totalInSession === 0 && a.checkInTime && a.checkOutTime && a.checkOutTime !== "") {
+                        const checkIn = moment(a.checkInTime, "HH:mm:ss");
+                        const checkOut = moment(a.checkOutTime, "HH:mm:ss");
+                        let diff = checkOut.diff(checkIn, 'hours', true);
+                        if (diff < 0) diff += 24;
+                        if (diff > 0) {
+                            totalInSession = diff;
+                        }
+                    }
+
                     // Handle active sessions (no checkout)
                     if ((!a.checkOutTime || a.checkOutTime === "") && a.checkInTime && a.date && moment(a.date, ["YYYY-MM-DD", "dddd, DD-MM-YYYY", "DD,MM,YYYY"]).isSame(moment(), 'day')) {
                         const checkIn = moment(a.checkInTime, "HH:mm:ss");
@@ -135,7 +146,19 @@ router.get(
                     (a.checkInTime || '').localeCompare(b.checkInTime || ''));
 
                 dayRecords.forEach(r => {
-                    const sessionTotal = (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0);
+                    let sessionTotal = (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0);
+
+                    // Fallback: If sessionTotal is 0 but we have both check-in and check-out times, calculate from timestamps
+                    if (sessionTotal === 0 && r.checkInTime && r.checkOutTime && r.checkOutTime !== "") {
+                        const checkIn = moment(r.checkInTime, "HH:mm:ss");
+                        const checkOut = moment(r.checkOutTime, "HH:mm:ss");
+                        let diff = checkOut.diff(checkIn, 'hours', true);
+                        if (diff < 0) diff += 24;
+                        if (diff > 0) {
+                            sessionTotal = diff;
+                        }
+                    }
+
                     const otData = calculateOvertime(sessionTotal, dateStr, dailyPrevHours);
                     
                     totalWorkHours += otData.workHours;
@@ -221,8 +244,21 @@ router.post(
             const { month, userId } = req.body; // month: "YYYY-MM"
             if (!month) return res.status(400).json({ msg: "Month is required" });
 
-            let query = { monthIdentifier: month };
-            if (userId) query.user = userId;
+            let query = {
+                $or: [
+                    { monthIdentifier: month },
+                    { date: { $regex: new RegExp(`^${month}`) } }
+                ]
+            };
+
+            if (userId) {
+                query = {
+                    $and: [
+                        query,
+                        { user: userId }
+                    ]
+                };
+            }
 
             await Attendance.updateMany(query, { $set: { isApproved: true } });
 

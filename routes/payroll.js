@@ -6,6 +6,7 @@ const Attendance = require('../models/Attendance');
 const Allowance = require('../models/Allowance');
 const Settings = require('../models/Settings');
 const { calculateOvertime } = require('../utilities/attendanceUtils');
+const moment = require('moment');
 
 // Helper: get a settings value by key, with a fallback default
 async function getSetting(key, fallback) {
@@ -73,7 +74,19 @@ router.get(
 
                     daySessions.forEach(r => {
                         // Total time in this session (stored fields)
-                        const sessionTotal = (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0);
+                        let sessionTotal = (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0);
+                        
+                        // Fallback: If sessionTotal is 0 but we have both check-in and check-out times, calculate from timestamps
+                        if (sessionTotal === 0 && r.checkInTime && r.checkOutTime && r.checkOutTime !== "") {
+                            const checkIn = moment(r.checkInTime, "HH:mm:ss");
+                            const checkOut = moment(r.checkOutTime, "HH:mm:ss");
+                            let diff = checkOut.diff(checkIn, 'hours', true);
+                            if (diff < 0) diff += 24; // handle overnight shifts
+                            if (diff > 0) {
+                                sessionTotal = diff;
+                            }
+                        }
+
                         const otData = calculateOvertime(sessionTotal, dateStr, dailyPrev);
                         totalWorkHours += otData.workHours;
                         totalOT1 += otData.ot1;
