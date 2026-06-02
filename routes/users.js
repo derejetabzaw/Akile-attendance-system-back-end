@@ -456,59 +456,50 @@ router.post(
     auth,
     async (req, res) => {
         try {
-            const { deviceId } = req.body;
-            console.log("BODY:", req.body)
+            console.log("CHECKOUT BODY:", req.body);
             const user = await User.findOne({ _id: req.user.id });
-            //if (deviceId == user.deviceId) {
-            if (deviceId == user.deviceId) {
-                console.log(deviceId);
-                console.log(user.deviceId);
-                const attendance = await Attendance.findOne({
-                    date: moment().format("YYYY-MM-DD"),
-                    user: req.user.id
-                }, {}, { sort: { 'checkInTime': -1 } });
 
-                if (!attendance || (attendance.checkOutTime && attendance.checkOutTime !== "")) {
-                    return res.status(400).json({ msg: "You must check in before checking out!" });
-                }
+            // Find the latest open attendance record for today
+            const attendance = await Attendance.findOne({
+                date: moment().format("YYYY-MM-DD"),
+                user: req.user.id
+            }, {}, { sort: { 'checkInTime': -1 } });
 
-                attendance.checkOutTime = moment().format("HH:mm:ss");
-                const checkIn = moment(attendance.checkInTime, "HH:mm:ss");
-                const checkOut = moment(attendance.checkOutTime, "HH:mm:ss");
-                
-                // Use the duration between check-in and check-out
-                let sessionHours = checkOut.diff(checkIn, 'hours', true);
-                
-                // Handle cases where checkout might be after midnight (if date is same)
-                if (sessionHours < 0) {
-                    sessionHours += 24;
-                }
-
-                // Find other records today to calculate accumulated hours
-                const otherRecords = await Attendance.find({
-                    user: req.user.id,
-                    date: attendance.date,
-                    _id: { $ne: attendance._id }
-                });
-
-                const previousHours = otherRecords.reduce((sum, r) => 
-                    sum + (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0), 0);
-                
-                const otData = calculateOvertime(sessionHours, attendance.date, previousHours);
-                
-                attendance.workedHours = otData.workHours;
-                attendance.overtime = otData.ot1;
-                attendance.overtimeTwo = otData.ot2;
-                attendance.monthIdentifier = moment(attendance.date).format("YYYY-MM");
-
-                await attendance.save();
-                await user.save();
-                console.log("attendance updated: ", attendance)
-                res.status(200).json(attendance);
-
-            } else {
-                return res.status(400).json({ error: "You can only check-out with your registered device" });
+            if (!attendance || (attendance.checkOutTime && attendance.checkOutTime !== "")) {
+                return res.status(400).json({ msg: "You must check in before checking out!" });
             }
+
+            attendance.checkOutTime = moment().format("HH:mm:ss");
+            const checkIn  = moment(attendance.checkInTime,  "HH:mm:ss");
+            const checkOut = moment(attendance.checkOutTime, "HH:mm:ss");
+
+            // Duration of this session
+            let sessionHours = checkOut.diff(checkIn, 'hours', true);
+            if (sessionHours < 0) sessionHours += 24; // overnight shift guard
+
+            // Hours already accumulated today from other completed sessions
+            const otherRecords = await Attendance.find({
+                user: req.user.id,
+                date: attendance.date,
+                _id: { $ne: attendance._id }
+            });
+
+            const previousHours = otherRecords.reduce(
+                (sum, r) => sum + (r.workedHours || 0) + (r.overtime || 0) + (r.overtimeTwo || 0),
+                0
+            );
+
+            const otData = calculateOvertime(sessionHours, attendance.date, previousHours);
+
+            attendance.workedHours  = otData.workHours;
+            attendance.overtime     = otData.ot1;
+            attendance.overtimeTwo  = otData.ot2;
+            attendance.monthIdentifier = moment(attendance.date).format("YYYY-MM");
+
+            await attendance.save();
+            console.log("attendance updated:", attendance);
+            return res.status(200).json(attendance);
+
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured" });

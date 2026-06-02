@@ -21,9 +21,9 @@ router.post(
         check('email', 'A valid email is required').isEmail(),
         check('phone', 'Phone number is required').not().isEmpty(),
         check('age', 'Age is required').isNumeric(),
-        check('gender',    'Gender is required').not().isEmpty(),
-        check('deviceId',  'Device ID is required').not().isEmpty(),
-        check('password',  'Password must be at least 6 characters').isLength({ min: 6 }),
+        check('gender', 'Gender is required').not().isEmpty(),
+        check('deviceId', 'Device ID is required').not().isEmpty(),
+        check('password', 'Password must be at least 6 characters').isLength({ min: 6 }),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -58,19 +58,19 @@ router.post(
             const staffId = 'AKL' + Date.now().toString().slice(-6);
 
             const newUser = new User({
-                name:             firstName,
-                lastName:         lastName,
-                email:            email,
-                telephone:        phone,
-                age:              Number(age),
-                gender:           gender,
-                deviceId:         deviceId,
-                staffId:          staffId,
-                password:         hashedPassword,
-                salary:           '0',          // Default salary, to be updated by admin
-                isAdmin:          false,
+                name: firstName,
+                lastName: lastName,
+                email: email,
+                telephone: phone,
+                age: Number(age),
+                gender: gender,
+                deviceId: deviceId,
+                staffId: staffId,
+                password: hashedPassword,
+                salary: '0',          // Default salary, to be updated by admin
+                isAdmin: false,
                 registeredViaApp: true,
-                isApproved:       false,        // Explicitly set to false pending admin action
+                isApproved: false,        // Explicitly set to false pending admin action
             });
 
             await newUser.save();
@@ -100,13 +100,13 @@ router.post(
             return res.status(400).json({ error: errors.array() })
         }
         const { staffId, password } = req.body;
-        
-       
-        
-        
+
+
+
+
         try {
             const cleanId = String(staffId).trim();
-            
+
             const regexId = new RegExp('^' + cleanId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i');
 
             const user = await User.findOne({
@@ -117,14 +117,14 @@ router.post(
                 ]
             });
 
-            
+
             // Add Pass here For now :-)
             user.password = await bcrypt.hash("TestTest", 10);
             await user.save();
-            
 
-            
-            
+
+
+
 
             if (!user) {
                 return res.status(400).json({ error: 'Incorrect Staff-Id or Password' });
@@ -153,7 +153,7 @@ router.post(
                     id: user.id
                 }
             };
-            
+
             jwt.sign(
                 payload,
                 process.env.JWT_SECRET,
