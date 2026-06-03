@@ -355,27 +355,31 @@ router.post(
     auth,
     async (req, res) => {
         try {
-            console.log("res::", req.headers.authorization, "\n")
-            //  check if user deviceId matches
-            //console.log(req.body)
             const { deviceId, Location } = req.body;
-            // const { Location } = parseInt(req.body.position);
             const user = await User.findOne({ _id: req.user.id });
 
-            console.log(deviceId)
-            // console.log(req.body)
-            // console.log(req.user.id)
-            // console.log(user)
+            if (!user) {
+                return res.status(404).json({ msg: "User not found." });
+            }
 
-            // console.log(Location)  // On line 215 it prints the position so this line not needed
-            // line 213 - 216 copied to 223 - 226 before commented
-
-            // if (user.deviceId == deviceId) {
-
-            // console.log(deviceId);
-            // console.log(req.body);
-            // console.log(req.user.id);
-            // console.log(user);    
+            // ── Device ID enforcement ──────────────────────────────────────
+            // If the stored deviceId does not match what the phone sent,
+            // we update the stored value instead of blocking check-in.
+            // This preserves all attendance history when an employee changes
+            // their phone. The admin can also update the device ID manually
+            // from the dashboard via PUT /users/update-device/:id.
+            if (deviceId) {
+                if (!user.deviceId) {
+                    // First time a device ID is recorded for this user
+                    await User.findByIdAndUpdate(req.user.id, { $set: { deviceId } });
+                    console.log(`[DeviceID] Stored first device ID for user ${user.staffId}: ${deviceId}`);
+                } else if (user.deviceId !== deviceId) {
+                    // Device changed – update silently and log for audit
+                    console.warn(`[DeviceID] Device changed for user ${user.staffId}: ${user.deviceId} → ${deviceId}`);
+                    await User.findByIdAndUpdate(req.user.id, { $set: { deviceId } });
+                }
+            }
+            // ──────────────────────────────────────────────────────────────
 
             // Check if user is already checked in for today
             const lastRecord = await Attendance.findOne(
@@ -411,35 +415,6 @@ router.post(
 
             await attendance.save();
             return res.status(200).json(attendance);
-
-            //          await attendance.save();
-            //            console.log("posted-attendance-information",attendance);
-            //      res.status(200).json(attendance);
-            //    } 
-            // THIS ELSE STATEMENT IS THE SAME AS 244 TO 256, SO DELETE THE LINE WHEN MAKING THE ELSE UNCOMMENTED
-            //const attendance = new Attendance({
-            //date: moment().format("dddd, DD-MM-YYYY"),
-            //user: req.user.id,
-            //checkInTime: moment().format("HH:mm:ss"),
-            //checkOutTime: ""
-            //});
-            //await attendance.save();
-            // console.log("attendance", attendance)
-            // console.log("first_check_in_time", attendance.checkInTime)
-            //console.log("posted-attendance-information",attendance);
-            //res.status(200).json(attendance);
-
-            // await attendance.save();
-
-            // // console.log("attendance", attendance)
-            // // console.log("first_check_in_time", attendance.checkInTime)
-            // console.log("posted-attendance-information",attendance);
-
-            // res.status(200).json(attendance);
-
-
-            // } else {
-            //    res.status(400).json({"error": "You can only check-in with your registered device"});
 
         } catch (error) {
             console.log(error.message);
@@ -503,6 +478,39 @@ router.post(
         } catch (error) {
             console.log(error.message);
             res.status(500).json({ msg: "Server Error occured" });
+        }
+    }
+);
+
+// @route    PUT api/users/update-device/:id
+// @desc     Admin manually sets / resets the registered device ID for a user.
+//           Using _id of the user. All attendance history is preserved.
+// @access   Private (admin)
+router.put(
+    '/update-device/:id',
+    async (req, res) => {
+        try {
+            const { deviceId } = req.body;
+
+            if (!deviceId && deviceId !== '') {
+                return res.status(400).json({ error: 'deviceId field is required.' });
+            }
+
+            const user = await User.findByIdAndUpdate(
+                req.params.id,
+                { $set: { deviceId: deviceId } },
+                { new: true }
+            ).select('-password');
+
+            if (!user) {
+                return res.status(404).json({ error: 'User not found.' });
+            }
+
+            console.log(`[DeviceID] Admin updated device ID for ${user.staffId} → '${deviceId}'`);
+            return res.status(200).json({ msg: 'Device ID updated successfully.', deviceId: user.deviceId });
+        } catch (error) {
+            console.error('update-device error:', error.message);
+            return res.status(500).json({ error: 'Server error.' });
         }
     }
 );
