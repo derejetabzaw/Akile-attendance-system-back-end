@@ -112,18 +112,36 @@ router.get(
             const now = moment();
             const currentMonth = now.format("YYYY-MM");
             const today = now.format("YYYY-MM-DD");
+
+            // Current week bounds (Monday → Sunday)
+            const weekStart = now.clone().startOf('isoWeek').format("YYYY-MM-DD");
+            const weekEnd   = now.clone().endOf('isoWeek').format("YYYY-MM-DD");
             
             const monthToQuery = req.query.month || currentMonth;
             
-            console.log(`[SUMMARY] User: ${req.params.userId}, Month: ${monthToQuery}, Now: ${now.format("HH:mm:ss")}`);
+            console.log(`[SUMMARY] User: ${req.params.userId}, Month: ${monthToQuery}, Week: ${weekStart}→${weekEnd}`);
 
+            // Fetch month records (unchanged behaviour)
             let query = { user: req.params.userId };
             if (monthToQuery !== 'all') {
                 query.date = { $regex: new RegExp(`^${monthToQuery}`) };
             }
-
             const records = await Attendance.find(query).lean();
-            console.log(`[SUMMARY] Found ${records.length} records for user ${req.params.userId}`);
+
+            // If the current week spans into the previous month we need those records too.
+            // Fetch them separately and merge (dedup by _id).
+            let allWeekRecords = records.filter(r => r.date >= weekStart && r.date <= weekEnd);
+            if (weekStart < now.startOf('month').format("YYYY-MM-DD")) {
+                const prevMonthQuery = {
+                    user: req.params.userId,
+                    date: { $gte: weekStart, $lte: weekEnd },
+                };
+                const extra = await Attendance.find(prevMonthQuery).lean();
+                const seenIds = new Set(allWeekRecords.map(r => r._id.toString()));
+                extra.forEach(r => { if (!seenIds.has(r._id.toString())) allWeekRecords.push(r); });
+            }
+
+            console.log(`[SUMMARY] Found ${records.length} monthly records for user ${req.params.userId}`);
 
             // We'll group records by date to correctly calculate daily overtime
             const recordsByDate = {};
@@ -135,8 +153,14 @@ router.get(
 
             let totalWorkHours = 0;
             let todayWorkHours = 0;
+            let weekWorkHours  = 0;
             let totalOT1 = 0;
             let totalOT2 = 0;
+
+            // Build a quick lookup of which dates fall in the current week
+            const weekDates = new Set(
+                allWeekRecords.map(r => r.date)
+            );
 
             // Process each day's records
             Object.keys(recordsByDate).forEach(dateStr => {
@@ -168,6 +192,9 @@ router.get(
                     if (dateStr === today) {
                         todayWorkHours += otData.workHours;
                     }
+                    if (weekDates.has(dateStr)) {
+                        weekWorkHours += otData.workHours;
+                    }
                     
                     dailyPrevHours += sessionTotal;
                 });
@@ -189,6 +216,7 @@ router.get(
 
                 totalWorkHours += activeOT.workHours;
                 todayWorkHours += activeOT.workHours;
+                weekWorkHours  += activeOT.workHours; // today is always part of this week
                 totalOT1 += activeOT.ot1;
                 totalOT2 += activeOT.ot2;
             }
@@ -196,8 +224,11 @@ router.get(
             return res.status(200).json({
                 userId: req.params.userId,
                 month: monthToQuery,
-                totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
+                weekStart,
+                weekEnd,
                 todayWorkHours: parseFloat(todayWorkHours.toFixed(2)),
+                weekWorkHours:  parseFloat(weekWorkHours.toFixed(2)),
+                totalWorkHours: parseFloat(totalWorkHours.toFixed(2)),
                 totalOT1: parseFloat(totalOT1.toFixed(2)),
                 totalOT2: parseFloat(totalOT2.toFixed(2)),
                 recordCount: records.length

@@ -88,7 +88,9 @@ router.get('/', async (req, res) => {
 // Employee: fetch their own assignments (JWT required).
 router.get('/my', verifyJWT, async (req, res) => {
     try {
-        const userId = (req.user.user && req.user.user.id) ? req.user.user.id : req.user._id;
+        // After verifyJWT, req.user is set to the inner { id: "..." } object.
+        // Prefer req.user.id, fall back to nested formats for safety.
+        const userId = req.user.id || (req.user.user && req.user.user.id) || req.user._id;
         console.log('Mobile User ID from token:', userId);
 
         const assignments = await Assignment.find({ employeeId: userId })
